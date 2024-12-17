@@ -28,6 +28,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'org.springframework.session:spring-session-jdbc'
 
+
+    implementation 'me.paulschwarz:spring-dotenv:3.0.0'
+
     // Websocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
