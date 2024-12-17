@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME}
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+
+  jpa:
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM}
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: ${SPRING_JPA_SHOW_SQL}
+    properties:
+      hibernate:
+        format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL}
+        use_sql_comments: ${SPRING_JPA_PROPERTIES_HIBERNATE_USE_SQL_COMMENTS}
+    logging:
+      level:
+        org.hibernate.SQL: ${SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_SQL}
+        org.hibernate.type.descriptor.sql.BasicBinder: ${SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER}
+
+server:
+  tomcat:
+    uri-encoding: ${SERVER_TOMCAT_URI_ENCODING}
+  servlet:
+    encoding:
+      charset: ${SERVER_SERVLET_ENCODING_CHARSET}
+      enabled: ${SERVER_SERVLET_ENCODING_ENABLED}
+      force: ${SERVER_SERVLET_ENCODING_FORCE}
+    session:
+      timeout: ${SERVER_SERVLET_SESSION_TIMEOUT}
+  mvc:
+    charset: ${SERVER_MVC_CHARSET}
+    locale: ${SERVER_MVC_LOCALE}
+    messages:
+      encoding: ${SERVER_MVC_MESSAGES_ENCODING}
+
+kakao:
+  client_id: ${KAKAO_CLIENT_ID}
+  redirect_uri: ${KAKAO_REDIRECT_URI}
+  client_secret: ${KAKAO_CLIENT_SECRET}
+  token_uri: ${KAKAO_TOKEN_URI}
+  user_info_uri: ${KAKAO_USER_INFO_URI}
