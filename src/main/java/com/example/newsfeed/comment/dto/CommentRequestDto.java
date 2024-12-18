@@ -13,15 +13,6 @@ public class CommentRequestDto {
     public CommentRequestDto(Long parentId, String content) {
         this.parentId = parentId;
         this.content = content;
-
-    }
-
-    public CommentRequestDto(String content) {
-        this.content = content;
-    }
-
-    public static CommentRequestDto toDto(Comment comment) {
-        return new CommentRequestDto(comment.getContent());
     }
 
     public static Comment toEntity(Member member, Feed feed, CommentRequestDto commentRequestDto, Comment parentComment) {
