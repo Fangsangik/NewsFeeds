@@ -54,12 +54,12 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(kakaoInterceptor)
                 .excludePathPatterns(WHITE_LIST)
                 .addPathPatterns("/**")
-                .order(Ordered.HIGHEST_PRECEDENCE + 3);
+                .order(Ordered.HIGHEST_PRECEDENCE + 2);
 
         registry.addInterceptor(adminInterceptor)
                 .excludePathPatterns(WHITE_LIST)
                 .addPathPatterns(ADMIN_ROLE_REQUIRED_PATH_PATTERN)
-                .order(Ordered.HIGHEST_PRECEDENCE + 2);
+                .order(Ordered.HIGHEST_PRECEDENCE + 3);
     }
 
     @Bean
