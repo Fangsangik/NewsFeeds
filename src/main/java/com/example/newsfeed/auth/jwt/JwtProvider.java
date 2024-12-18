@@ -5,9 +5,12 @@ import com.example.newsfeed.member.type.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,8 +20,8 @@ public class JwtProvider {
     // 비밀키 JWT 서명을 위해 사용 HS256 알고리즘 사용
     private final SecretKey secretKey;
 
-    public JwtProvider() {
-        this.secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    public JwtProvider(@Value("${jwt.secret}") String secret) {
+        this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
     // 토큰 생성
