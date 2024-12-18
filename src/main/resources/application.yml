@@ -4,6 +4,9 @@ spring:
   application:
     name: ${SPRING_APPLICATION_NAME}
 
+  jwt:
+    secret: ${SPRING_JWT_SECRET}
+
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
