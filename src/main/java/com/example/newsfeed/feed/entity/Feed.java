@@ -34,14 +34,25 @@ public class Feed extends BaseEntity {
     @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL)
     private List<Like> likes = new ArrayList<>();
 
+    private String image;
+    private String address;
+    private Double latitude;
+    private Double longitude;
+
     public Feed() {
     }
 
     @Builder
-    public Feed(String title, String content, Member member) {
+    public Feed(String title, String content, Member member, List<Comment> comments, List<Like> likes, String image, String address, Double latitude, Double longitude) {
         this.title = title;
         this.content = content;
         this.member = member;
+        this.comments = comments;
+        this.likes = likes;
+        this.image = image;
+        this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public void update(String title, String content) {

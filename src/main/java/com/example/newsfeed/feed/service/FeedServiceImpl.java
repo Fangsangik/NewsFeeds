@@ -6,6 +6,7 @@ import com.example.newsfeed.feed.dto.FeedUpdateResponseDto;
 import com.example.newsfeed.feed.dto.FeedWithLikeCountDto;
 import com.example.newsfeed.feed.entity.Feed;
 import com.example.newsfeed.feed.repository.FeedRepository;
+import com.example.newsfeed.kakao.service.KakaoGeocodingService;
 import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.repository.MemberRepository;
 import org.springframework.data.domain.Page;
@@ -21,10 +22,12 @@ public class FeedServiceImpl implements FeedService {
 
     private final FeedRepository feedRepository;
     private final MemberRepository memberRepository;
+    private final KakaoGeocodingService kakaoGeocodingService;
 
-    public FeedServiceImpl(FeedRepository feedRepository, MemberRepository memberRepository) {
+    public FeedServiceImpl(FeedRepository feedRepository, MemberRepository memberRepository, KakaoGeocodingService kakaoGeocodingService) {
         this.feedRepository = feedRepository;
         this.memberRepository = memberRepository;
+        this.kakaoGeocodingService = kakaoGeocodingService;
     }
 
     @Transactional
@@ -34,8 +37,12 @@ public class FeedServiceImpl implements FeedService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("Member does not exist"));
 
+        // Get the address from the latitude and longitude
+        String address = kakaoGeocodingService.getAddress(feedRequestDto.getLatitude(), feedRequestDto.getLongitude());
+
         // Create a feed
-        Feed feed = FeedRequestDto.toDto(member, feedRequestDto);
+        Feed feed = FeedRequestDto.toDto(member, feedRequestDto, address);
+
 
         // Save the feed
         return FeedResponseDto.toDto(feedRepository.save(feed));
