@@ -49,7 +49,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(userInterceptor)
                 .excludePathPatterns(WHITE_LIST)
                 .addPathPatterns(USER_ROLE_REQUIRED_PATH_PATTERNS)
-                .order(Ordered.HIGHEST_PRECEDENCE + 2);
+                .order(Ordered.HIGHEST_PRECEDENCE + 1);
 
         registry.addInterceptor(kakaoInterceptor)
                 .excludePathPatterns(WHITE_LIST)
@@ -59,7 +59,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(adminInterceptor)
                 .excludePathPatterns(WHITE_LIST)
                 .addPathPatterns(ADMIN_ROLE_REQUIRED_PATH_PATTERN)
-                .order(Ordered.HIGHEST_PRECEDENCE + 1);
+                .order(Ordered.HIGHEST_PRECEDENCE + 2);
     }
 
     @Bean
