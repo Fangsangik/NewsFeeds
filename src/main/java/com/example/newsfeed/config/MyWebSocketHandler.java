@@ -1,17 +1,26 @@
 package com.example.newsfeed.config;
 
+import com.example.newsfeed.message.entity.Message;
+import com.example.newsfeed.message.repository.MessageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class MyWebSocketHandler extends TextWebSocketHandler {
 
+    private final MessageRepository messageRepository;
+
     private static final ConcurrentHashMap<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();
+
+    public MyWebSocketHandler(MessageRepository messageRepository) {
+        this.messageRepository = messageRepository;
+    }
 
     // 클라이언트 접속 시
     @Override
@@ -20,7 +29,14 @@ public class MyWebSocketHandler extends TextWebSocketHandler {
 
         if (memberId != null) {
             userSessions.put(memberId, session);
-            log.info("클라이언트 접속: {}", memberId, session.getId());
+            log.info("클라이언트 접속: {}", memberId);
+
+            List<Message> unreadMessages = messageRepository.findByReceiverIdAndReadStatusFalse(memberId);
+            for (Message unreadMessage : unreadMessages) {
+                session.sendMessage(new TextMessage(unreadMessage.getMessage()));
+                unreadMessage.setReadStatus(true);
+            }
+            messageRepository.saveAll(unreadMessages);
         } else {
             session.sendMessage(new TextMessage("로그인이 필요합니다."));
             session.close();
