@@ -4,8 +4,8 @@ import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.member.type.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -15,12 +15,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-@Service
+@Component
 public class JwtProvider {
     // 비밀키 JWT 서명을 위해 사용 HS256 알고리즘 사용
     private final SecretKey secretKey;
 
-    public JwtProvider(@Value("${jwt.secret}") String secret) {
+    public JwtProvider(@Value("${spring.jwt.secret}") String secret) {
         this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
@@ -30,7 +30,7 @@ public class JwtProvider {
 
         // Access Token 생성
         Date now = new Date();
-        Date accessTokenExpireDate = new Date(now.getTime() + 1000L * 60 * 15); // 15분 유효기간
+        Date accessTokenExpireDate = new Date(now.getTime() + 1000L * 60 * 60); // 1시간 유효기간
         Map<String, Object> claims = new HashMap<>();
         claims.put("memberId", memberId);
         claims.put("role", role.name());
