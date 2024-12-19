@@ -3,18 +3,24 @@ import com.example.newsfeed.comment.entity.Comment;
 import com.example.newsfeed.constants.BaseEntity;
 import com.example.newsfeed.like.entity.Like;
 import com.example.newsfeed.member.entity.Member;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Getter
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Feed extends BaseEntity {
 
     @Id
@@ -28,9 +34,11 @@ public class Feed extends BaseEntity {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL)
     private List<Comment> comments = new ArrayList<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL)
     private List<Like> likes = new ArrayList<>();
 
