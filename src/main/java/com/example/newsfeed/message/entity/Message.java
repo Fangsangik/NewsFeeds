@@ -1,5 +1,6 @@
 package com.example.newsfeed.message.entity;
 
+import com.example.newsfeed.constants.BaseTimeEntity;
 import com.example.newsfeed.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Builder;
@@ -9,11 +10,13 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-public class Message {
+public class Message extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private String message;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id")
@@ -23,20 +26,22 @@ public class Message {
     @JoinColumn(name = "sender_id")
     private Member sender;
 
-    private LocalDateTime timestamp;
-
     private boolean readStatus;
 
     @Builder
-    public Message(Member receiver, Member sender, LocalDateTime timestamp, boolean readStatus) {
+    public Message(String message, Member receiver, Member sender,  boolean readStatus) {
+        this.message = message;
         this.receiver = receiver;
         this.sender = sender;
-        this.timestamp = timestamp;
         this.readStatus = readStatus;
     }
 
     public Message() {
 
+    }
+
+    public void setReadStatus(boolean readStatus) {
+        this.readStatus = readStatus;
     }
 }
 
