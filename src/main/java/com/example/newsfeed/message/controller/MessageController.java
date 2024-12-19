@@ -4,6 +4,7 @@ import com.example.newsfeed.constants.response.CommonResponse;
 import com.example.newsfeed.message.dto.MessageRequestDto;
 import com.example.newsfeed.message.service.MessageService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,12 +25,19 @@ public class MessageController {
         return ResponseEntity.ok(new CommonResponse<>("Message 전송 완료"));
     }
 
+    @PatchMapping("/{messageId}/read")
+    public ResponseEntity<CommonResponse<?>> markAsRead
+            (@PathVariable Long messageId) {
+        messageService.markAsRead(messageId);
+        return ResponseEntity.ok(new CommonResponse<>("읽음 표시 완료"));
+    }
+
     @GetMapping
     public ResponseEntity<CommonResponse<Page<MessageRequestDto>>> getMessageList
             (@RequestAttribute("memberId") Long memberId,
              @RequestParam(defaultValue = "0") int page,
              @RequestParam(defaultValue = "10") int size) {
-        Page<MessageRequestDto> messageByUserId = messageService.getMessageByUserId(memberId, page, size);
+        Page<MessageRequestDto> messageByUserId = messageService.getMessages(memberId, PageRequest.of(page, size));
         return ResponseEntity.ok(new CommonResponse<>("조회 완료", messageByUserId));
     }
 }
