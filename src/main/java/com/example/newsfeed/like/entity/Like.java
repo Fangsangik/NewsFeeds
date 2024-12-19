@@ -24,9 +24,11 @@ public class Like {
     private Integer likeCount;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "feed_id")
     private Feed feed;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
     private Member member;
 
     public Like() {
