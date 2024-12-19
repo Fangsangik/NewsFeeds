@@ -73,11 +73,7 @@ public class FeedServiceImpl implements FeedService {
     @Transactional(readOnly = true)
     @Override
     public Page<FeedWithLikeCountDto> getAllFeedsOrderByLikeCount(int page, int size) {
-        // 좋아요 수 기준으로 피드를 조회
-        Page<Feed> feeds = feedRepository.findAllFeedsOrderByLikeCount(PageRequest.of(page, size));
-
-        // Feed 엔터티를 FeedWithLikeCountDto로 변환하여 반환
-        return feeds.map(FeedWithLikeCountDto::toDto);
+        return feedRepository.findAllFeedsOrderByLikeCount(PageRequest.of(page, size));
     }
 
     @Transactional
