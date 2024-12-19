@@ -1,11 +1,20 @@
 spring:
   config:
-    import: optional:file:.env[.properties]
+    import: file:.env[.properties]
   application:
     name: ${SPRING_APPLICATION_NAME}
-
   jwt:
-    secret: ${SPRING_JWT_SECRET}
+    secret: ${JWT_SECRET}
+  logging:
+    level:
+        root: ${SPRING_LOGGING_LEVEL_ROOT}
+        org.springframework: ${SPRING_LOGGING_LEVEL_ORG_SPRINGFRAMEWORK}
+        org.hibernate: ${SPRING_LOGGING_LEVEL_ORG_HIBERNATE}
+
+  session:
+    store-type: ${SPRING_SESSION_STORE_TYPE}
+    jdbc:
+      initialize-schema: always
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -22,6 +31,7 @@ spring:
       hibernate:
         format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL}
         use_sql_comments: ${SPRING_JPA_PROPERTIES_HIBERNATE_USE_SQL_COMMENTS}
+        default_batch_fetch_size: ${SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_BATCH_FETCH_SIZE}
     logging:
       level:
         org.hibernate.SQL: ${SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_SQL}
