@@ -6,6 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface MessageRepository extends JpaRepository<Message, Long> {
-    Page<MessageRequestDto> findMemberById(Long memberId, Pageable pageable);
+    List<Message> findByReceiverIdAndReadStatusFalse(Long memberId);
+
+    Page<MessageRequestDto> findAllByReceiverIdAndReadStatusFalse(Long memberId, Pageable pageable);
 }
