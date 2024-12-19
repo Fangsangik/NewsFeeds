@@ -14,10 +14,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private static final String[] USER_ROLE_REQUIRED_PATH_PATTERNS = {"/feeds/*", "/comments/*", "/likes/*"};
+    private static final String[] USER_ROLE_REQUIRED_PATH_PATTERNS = {"/feeds/*", "/comments/*", "/likes/*", "/messages/*"};
     private static final String ADMIN_ROLE_REQUIRED_PATH_PATTERN = "/admins/*";
 
-    private static final String[] WHITE_LIST = {"/members/signup", "/error", "/ouath/**", "/kakao/**"};
+    private static final String[] WHITE_LIST = {"/members/signup", "/error", "/ouath/*", "/kakao/*"};
 
     private final AuthInterceptor authInterceptor;
 
