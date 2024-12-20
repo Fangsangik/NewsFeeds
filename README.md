@@ -284,3 +284,14 @@ AuthService에 login 메서드에 추가
 
     boolean existsByMemberEmailNot(String email); 값을 추가 해서 로그인이 되어 있는 이메일과, pk 값 비교 
 ```
+3. Logout
+로그아웃 처리시 제대로된 로그아웃이 진행이 안됨
+그래서 해당 회원에 조회되는 토큰이 있는지 조회 후 해당 토큰을 삭제 
+```
+    @Transactional
+    public void logout(Long memberId) {
+        JwtToken jwtToken = tokenRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Token does not exist"));
+        tokenRepository.delete(jwtToken);
+    }
+```
