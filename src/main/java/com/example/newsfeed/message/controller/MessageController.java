@@ -31,12 +31,22 @@ public class MessageController {
         return ResponseEntity.ok(new CommonResponse<>("Message 전송 완료"));
     }
 
-    @PatchMapping("/{messageId}/read")
+    @PatchMapping("/{messageId}/markAsRead")
     public ResponseEntity<CommonResponse<?>> markAsRead
             (@RequestAttribute("memberId") Long memberId,
              @PathVariable Long messageId) {
         messageService.markAsRead(messageId);
         return ResponseEntity.ok(new CommonResponse<>("읽음 표시 완료"));
+    }
+
+    @GetMapping("/read/{receiverId}")
+    public ResponseEntity<CommonResponse<Page<MessageRequestDto>>> readMessage
+            (@RequestAttribute("memberId") Long memberId,
+             @PathVariable Long receiverId,
+             @RequestParam(defaultValue = "0") int page,
+             @RequestParam(defaultValue = "10") int size) {
+        Page<MessageRequestDto> messageByUserId = messageService.readMessage(receiverId, PageRequest.of(page, size));
+        return ResponseEntity.ok(new CommonResponse<>("조회 완료", messageByUserId));
     }
 
     @GetMapping
