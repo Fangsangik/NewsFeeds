@@ -53,11 +53,12 @@ public class Member extends BaseEntity {
     @JoinColumn(name = "kakao_member_id")
     private KakaoMember kakaoMember;
 
-    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
     private List<Message> sentMessages = new ArrayList<>();
 
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL)
     private List<Message> receivedMessages = new ArrayList<>();
+
 
     @Builder
     public Member(String name, String email, String password, String phoneNumber, String address, int age, String image, LocalDateTime deletedAt, Role role, LoginType loginType, KakaoMember kakaoMember) {
