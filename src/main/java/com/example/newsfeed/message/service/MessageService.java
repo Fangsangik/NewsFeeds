@@ -49,6 +49,11 @@ public class MessageService {
         return messageRepository.findAllByReceiverIdAndReadStatusFalse(memberId, pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<MessageRequestDto> readMessage(Long memberId, Pageable pageable) {
+        return messageRepository.findAllByReceiverId(memberId, pageable);
+    }
+
 
     // 메시지 전송 및 저장
     private Message saveMessage (MessageRequestDto messageRequestDto) {
