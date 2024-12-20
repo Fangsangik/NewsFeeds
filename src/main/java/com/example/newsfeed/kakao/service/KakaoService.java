@@ -1,6 +1,6 @@
 package com.example.newsfeed.kakao.service;
 
-import com.example.newsfeed.auth.jwt.JwtProvider;
+import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.kakao.dto.KakaoTokenResponseDto;
 import com.example.newsfeed.kakao.dto.KakaoUserInfoResponseDto;

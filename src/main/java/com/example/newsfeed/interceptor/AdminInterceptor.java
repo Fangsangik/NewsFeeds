@@ -1,7 +1,6 @@
 package com.example.newsfeed.interceptor;
 
-import com.example.newsfeed.auth.jwt.JwtProvider;
-import com.example.newsfeed.interceptor.constants.BaseInterceptor;
+import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.member.type.Role;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

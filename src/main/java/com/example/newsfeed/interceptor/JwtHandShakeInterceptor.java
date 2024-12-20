@@ -1,6 +1,6 @@
 package com.example.newsfeed.interceptor;
 
-import com.example.newsfeed.auth.jwt.JwtProvider;
+import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -10,6 +10,9 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * WebSocket 연결 시 JWT 토큰을 검증하는 인터셉터
+ */
 @Slf4j
 public class JwtHandShakeInterceptor implements HandshakeInterceptor {
 

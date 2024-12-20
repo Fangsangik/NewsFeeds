@@ -1,6 +1,6 @@
 package com.example.newsfeed.config;
 
-import com.example.newsfeed.auth.jwt.JwtProvider;
+import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.interceptor.JwtHandShakeInterceptor;
 import com.example.newsfeed.message.repository.MessageRepository;
 import org.springframework.context.annotation.Bean;

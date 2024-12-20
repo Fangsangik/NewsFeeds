@@ -1,6 +1,7 @@
 package com.example.newsfeed.interceptor;
 
-import com.example.newsfeed.auth.jwt.JwtProvider;
+import com.example.newsfeed.auth.jwt.service.JwtProvider;
+import io.jsonwebtoken.Jwt;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
@@ -42,5 +43,4 @@ public class AuthInterceptor implements HandlerInterceptor {
         request.setAttribute("memberId", userId);
         return true;
     }
-
 }

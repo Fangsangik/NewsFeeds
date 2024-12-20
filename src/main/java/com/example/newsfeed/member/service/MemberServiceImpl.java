@@ -1,6 +1,6 @@
 package com.example.newsfeed.member.service;
 
-import com.example.newsfeed.auth.jwt.JwtProvider;
+import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.config.PasswordEncoder;
 import com.example.newsfeed.exception.*;

@@ -1,11 +1,10 @@
-package com.example.newsfeed.auth.jwt;
+package com.example.newsfeed.auth.jwt.service;
 
 import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.member.type.Role;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -15,8 +14,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
+@Service
 public class JwtProvider {
+
     // 비밀키 JWT 서명을 위해 사용 HS256 알고리즘 사용
     private final SecretKey secretKey;
 
@@ -92,4 +92,5 @@ public class JwtProvider {
                 .getBody() // 토큰의 body 반환
                 .get("role", String.class));
     }
+
 }
