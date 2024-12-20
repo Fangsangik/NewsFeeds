@@ -18,12 +18,4 @@ public class MessageRequestDto {
         this.receiverId = receiverId;
         this.message = message;
     }
-
-    public static Message toEntity(Member sender, Member receiver) {
-        return Message.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .readStatus(false)
-                .build();
-    }
 }
