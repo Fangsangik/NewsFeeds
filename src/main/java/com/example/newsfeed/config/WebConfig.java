@@ -1,9 +1,6 @@
 package com.example.newsfeed.config;
 
-import com.example.newsfeed.interceptor.AdminInterceptor;
-import com.example.newsfeed.interceptor.AuthInterceptor;
-import com.example.newsfeed.interceptor.KakaoInterceptor;
-import com.example.newsfeed.interceptor.UserInterceptor;
+import com.example.newsfeed.interceptor.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -17,7 +14,7 @@ public class WebConfig implements WebMvcConfigurer {
     private static final String[] USER_ROLE_REQUIRED_PATH_PATTERNS = {"/feeds/*", "/comments/*", "/likes/*", "/messages/*"};
     private static final String ADMIN_ROLE_REQUIRED_PATH_PATTERN = "/admins/*";
 
-    private static final String[] WHITE_LIST = {"/members/signup", "/error", "/ouath/*", "/kakao/*"};
+    private static final String[] WHITE_LIST = {"/members/signup", "/error", "/oauth/*", "/kakao/*", "/oauth/refresh"};
 
     private final AuthInterceptor authInterceptor;
 
@@ -26,6 +23,7 @@ public class WebConfig implements WebMvcConfigurer {
     private final UserInterceptor userInterceptor;
 
     private final AdminInterceptor adminInterceptor;
+
 
     public WebConfig(AuthInterceptor authInterceptor, KakaoInterceptor kakaoInterceptor, UserInterceptor userInterceptor, AdminInterceptor adminInterceptor) {
         this.authInterceptor = authInterceptor;
