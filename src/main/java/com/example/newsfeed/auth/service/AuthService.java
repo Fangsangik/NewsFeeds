@@ -85,4 +85,11 @@ public class AuthService {
 
         return jwtProvider.generateTokens(member.getId(), Role.USER, LoginType.NORMAL_USER).get("accessToken");
     }
+
+    @Transactional
+    public void logout(Long memberId) {
+        JwtToken jwtToken = tokenRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Token does not exist"));
+        tokenRepository.delete(jwtToken);
+    }
 }
