@@ -39,9 +39,9 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<CommonResponse<String>> logout(HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        session.invalidate();
+    public ResponseEntity<CommonResponse<String>> logout
+            (@RequestParam Long memberId) {
+        authService.logout(memberId);
         return ResponseEntity.ok(new CommonResponse<>("로그아웃 성공"));
     }
 
