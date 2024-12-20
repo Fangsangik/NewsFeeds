@@ -20,14 +20,21 @@ public class MessageController {
 
     @PostMapping
     public ResponseEntity<CommonResponse<String>> sendMessage
-            (@RequestBody MessageRequestDto requestDto) {
+            (@RequestAttribute("memberId") Long memberId,
+             @RequestBody MessageRequestDto requestDto) {
+
+        if (!memberId.equals(requestDto.getSenderId())) {
+            return ResponseEntity.badRequest().body(new CommonResponse<>("본인이 보낸 메시지만 전송할 수 있습니다."));
+        }
+
         messageService.sendMessage(requestDto);
         return ResponseEntity.ok(new CommonResponse<>("Message 전송 완료"));
     }
 
     @PatchMapping("/{messageId}/read")
     public ResponseEntity<CommonResponse<?>> markAsRead
-            (@PathVariable Long messageId) {
+            (@RequestAttribute("memberId") Long memberId,
+             @PathVariable Long messageId) {
         messageService.markAsRead(messageId);
         return ResponseEntity.ok(new CommonResponse<>("읽음 표시 완료"));
     }
