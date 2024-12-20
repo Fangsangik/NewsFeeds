@@ -1,8 +1,8 @@
-# newsFeed
+# 🎈 newsFeed 🎈
 ## 🛠️ Tools : 
 ## 🥅 Period : 2024/12/16 ~ 2024/12/31
 ## 👨‍💻 About Project :
-
+## 👨‍💻 ERD
 ## 🧨 Trouble Shooting
 ### Member
 Refactoring : sender와 receiver의 mapping id 값이 잘못 설정 되어 있었음
