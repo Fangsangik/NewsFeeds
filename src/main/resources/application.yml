@@ -6,6 +6,10 @@ spring:
   jwt:
     secret: ${SPRING_JWT_SECRET}
 
+  redis:
+    host: ${SPRING_REDIS_HOST}
+    port: ${SPRING_REDIS_PORT}
+
   logging:
     level:
         root: ${SPRING_LOGGING_LEVEL_ROOT}
