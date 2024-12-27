@@ -1,4 +1,4 @@
-package com.example.newsfeed.config;
+package com.example.newsfeed.constants.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
