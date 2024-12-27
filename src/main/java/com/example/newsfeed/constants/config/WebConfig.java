@@ -1,4 +1,4 @@
-package com.example.newsfeed.config;
+package com.example.newsfeed.constants.config;
 
 import com.example.newsfeed.interceptor.*;
 import org.springframework.context.annotation.Bean;
