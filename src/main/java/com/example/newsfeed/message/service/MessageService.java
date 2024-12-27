@@ -1,13 +1,11 @@
 package com.example.newsfeed.message.service;
 
-import com.example.newsfeed.config.MyWebSocketHandler;
 import com.example.newsfeed.member.repository.MemberRepository;
 import com.example.newsfeed.message.dto.MessageRequestDto;
 import com.example.newsfeed.message.entity.Message;
 import com.example.newsfeed.message.repository.MessageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
