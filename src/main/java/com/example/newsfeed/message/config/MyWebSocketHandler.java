@@ -1,4 +1,4 @@
-package com.example.newsfeed.config;
+package com.example.newsfeed.message.config;
 
 import com.example.newsfeed.message.entity.Message;
 import com.example.newsfeed.message.repository.MessageRepository;
