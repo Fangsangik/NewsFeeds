@@ -1,12 +1,11 @@
 package com.example.newsfeed.auth.service;
 
-import com.example.newsfeed.auth.dto.AuthLoginDto;
 import com.example.newsfeed.auth.dto.LoginRequestDto;
 import com.example.newsfeed.auth.jwt.entity.JwtToken;
 import com.example.newsfeed.auth.jwt.repository.TokenRepository;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
-import com.example.newsfeed.config.PasswordEncoder;
+import com.example.newsfeed.member.config.PasswordEncoder;
 import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.repository.MemberRepository;
 import com.example.newsfeed.member.type.Role;
