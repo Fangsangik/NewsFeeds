@@ -17,8 +17,13 @@ public class ChatController {
 
     @MessageMapping("/send")
     public void sendMessage(String message) {
-        //Redis 체널에서 메시지 발행
-        chatMessagePublisher.publish("chat", message);
+        System.out.println("WebSocket으로 받은 메시지: " + message);
+        try {
+            chatMessagePublisher.publish("chat", message);
+            System.out.println("Redis로 퍼블리시 성공: " + message);
+        } catch (Exception e) {
+            System.err.println("Redis 퍼블리시 실패: " + e.getMessage());
+        }
     }
 
     /**
