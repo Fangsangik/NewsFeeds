@@ -41,8 +41,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-stomp")
                 .setAllowedOriginPatterns("*") // origin 허용
-                .addInterceptors(new JwtHandShakeInterceptor(jwtProvider))
-                .withSockJS(); // WebSocket을 지원하지 않는 환경에서도 사용 가능
+                .addInterceptors(new JwtHandShakeInterceptor(jwtProvider));
     }
 
     //친구 설정시 사용할 메시지 브로커 설정
@@ -50,7 +49,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         //"sub"가 prefix인 destination을 가진 메시지를 브로커로 라우팅 설정
         registry.enableSimpleBroker("/sub");
-        //"/pub"가 prefix로 붙은 메시지를 @Controller내에서 @MessageMapping이 붙은 메소드로 라우탕
+        //"/pub"가 prefix로 붙은 메시지를 @Controller내에서 @MessageMapping이 붙은 메소드로 라우팅 설정
         registry.setApplicationDestinationPrefixes("/pub");
     }
 }
