@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -28,7 +28,7 @@ public class RedisConfig {
      * @param redisConnectionFactory : Redis의 연결을 서정
      * @param listenerAdapter : 메세지를 처리하는 Listener를 어뎁터 형태로 등록
      *
-     * PatternTopic : 특정 채널이나 패턴을 구독
+     * ChannelTopic : 특정 채널이나 패턴을 구독
      * @return
      */
     @Bean
@@ -37,7 +37,7 @@ public class RedisConfig {
 
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(redisConnectionFactory);
-        container.addMessageListener(listenerAdapter, new PatternTopic("chat"));
+        container.addMessageListener(listenerAdapter, new ChannelTopic("chat"));
         return container;
     }
 
