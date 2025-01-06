@@ -11,6 +11,8 @@ public enum ErrorCode {
   SAME_PASSWORD("비밀번호는 다른 비밀번호를 사용하여야합니다.", HttpStatus.BAD_REQUEST),
   //비밀번호가 틀렸을 때 출력하는 오류 메시지
   WRONG_PASSWORD("비밀 번호가 틀렸습니다.", HttpStatus.BAD_REQUEST),
+  //이메일이 존재 하지 않습니다
+  EMAIL_NOT_EXIST("이메일이 존재하지 않습니다.", HttpStatus.BAD_REQUEST),
   //아이디 비밀번호가 잘못됨
   DIFFERENT_EMAIL_PASSWORD("이메일 혹은 비밀번호가 잘못되었습니다.", HttpStatus.BAD_REQUEST),
   //탈퇴한 이메일로 가입을 시도할 때 출력하는 오류 메시지
@@ -25,18 +27,21 @@ public enum ErrorCode {
   SELF_FRIEND("자기자신에게 친구요청을 보낼 수 없습니다.", HttpStatus.BAD_REQUEST),
 
   // NotFoundException
-
+  NOT_FOUND_POST("게시글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_NEWSFEED("뉴스피드를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-
+  NOT_FOUND_MESSAGE("메시지를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_NEWSFEED_LIKE("좋아요를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-
+  NOT_FOUND_LIKE("좋아요를 누르지 않았습니다.", HttpStatus.NOT_FOUND),
   NOT_FOUND_MEMBER("멤버를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
   NOT_FOUND_EMAIL("이메일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
   NOT_FOUND_COMMENT("댓글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+  NOT_FOUND_PARENT_COMMENT("부모 댓글을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
   NOT_FOUND_FRIEND_REQUEST("친구신청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
+  NO_REQUEST_FRIEND("친구신청이 없습니다.", HttpStatus.NOT_FOUND),
 
   // InternalServerException
   //세션이 만료되었을 때 출력하는 오류 메시지
@@ -59,10 +64,11 @@ public enum ErrorCode {
   NO_AUTHOR_CHANGE("수정, 삭제는 작성자만 할 수 있습니다.", HttpStatus.UNAUTHORIZED),
   //프로필 본인 조회
   NO_AUTHOR_PROFILE("프로필은 본인만 조회할 수 있습니다.", HttpStatus.UNAUTHORIZED),
-
+  //권한이 존재 하지 않을떄
+  NO_AUTHOR("권한이 없습니다.", HttpStatus.UNAUTHORIZED),
   NO_SELF_LIKE("자신이 작성한 게시글과 댓글에 좋아요를 달 수 없습니다.", HttpStatus.UNAUTHORIZED),
-
-  NO_AUTHOR_APPROVE("이 친구 요청을 승인하거나 거절할 권한이 없습니다.", HttpStatus.UNAUTHORIZED);
+  NO_AUTHOR_APPROVE("이 친구 요청을 승인하거나 거절할 권한이 없습니다.", HttpStatus.UNAUTHORIZED),
+  JWT_TOKEN_EXPIRED("토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED);
 
   private final String message;
   private final HttpStatus httpStatus;

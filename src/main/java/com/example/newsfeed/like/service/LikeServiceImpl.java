@@ -1,5 +1,7 @@
 package com.example.newsfeed.like.service;
 
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.feed.repository.FeedRepository;
 import com.example.newsfeed.like.dto.LikeResponseDto;
 import com.example.newsfeed.like.entity.Like;
@@ -30,9 +32,9 @@ public class LikeServiceImpl implements LikeService {
                 .orElseGet(() -> {
                     Like newLike = Like.builder()
                             .feed(feedRepository.findById(feedId)
-                                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 피드입니다.")))
+                                    .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED)))
                             .member(memberRepository.findById(memberId)
-                                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다.")))
+                                    .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_MEMBER)))
                             .likeCount(0)
                             .build();
                     likeRepository.save(newLike); // 새 Like는 저장
@@ -57,7 +59,7 @@ public class LikeServiceImpl implements LikeService {
         }
 
         if (likes.isEmpty()) {
-            throw new IllegalArgumentException("좋아요를 누르지 않은 게시물입니다.");
+            throw new NotFoundException(ErrorCode.NOT_FOUND_LIKE);
         }
 
         Like like = likes.get(0);
@@ -72,7 +74,7 @@ public class LikeServiceImpl implements LikeService {
     @Override
     public LikeResponseDto getLikeCount(Long feedId) {
         feedRepository.findById(feedId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 피드입니다."));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED));
 
         Long likeCount = likeRepository.countByFeedId(feedId);// DB에서 좋아요 개수 조회
 

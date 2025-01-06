@@ -1,5 +1,7 @@
 package com.example.newsfeed.message.service;
 
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.member.repository.MemberRepository;
 import com.example.newsfeed.message.dto.MessageRequestDto;
 import com.example.newsfeed.message.entity.Message;
@@ -13,6 +15,8 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Map;
+
+import static com.example.newsfeed.exception.ErrorCode.*;
 
 @Slf4j
 @Service
@@ -37,7 +41,7 @@ public class MessageService {
     @Transactional
     public void markAsRead(Long messageId) {
         Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("메시지가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
         message.setReadStatus(true);
         messageRepository.save(message);
     }
@@ -58,10 +62,10 @@ public class MessageService {
         return messageRepository.save(new Message(
                 messageRequestDto.getMessage(),
                 memberRepository.findById(messageRequestDto.getReceiverId())
-                        .orElseThrow(() -> new IllegalArgumentException("받는 사용자가 존재하지 않습니다.")),
+                        .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER)),
                 memberRepository.findById(messageRequestDto.getSenderId())
                         .orElseThrow(()
-                        -> new IllegalArgumentException("보내는 사용자가 존재하지 않습니다.")), false));
+                        -> new NotFoundException(NOT_FOUND_MEMBER)), false));
     }
 
     // 추후 재사용성을 높일 수 있도록 분리

@@ -5,6 +5,8 @@ import com.example.newsfeed.comment.dto.CommentRequestDto;
 import com.example.newsfeed.comment.dto.CommentResponseDto;
 import com.example.newsfeed.comment.entity.Comment;
 import com.example.newsfeed.comment.repository.CommentRepository;
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.feed.entity.Feed;
 import com.example.newsfeed.feed.repository.FeedRepository;
 import com.example.newsfeed.member.entity.Member;
@@ -13,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+import static com.example.newsfeed.exception.ErrorCode.NOT_FOUND_COMMENT;
+import static com.example.newsfeed.exception.ErrorCode.NOT_FOUND_MEMBER;
 
 @Service
 public class CommentServiceImpl implements CommentService{
@@ -32,20 +37,20 @@ public class CommentServiceImpl implements CommentService{
     public CommentResponseDto createComment(Long memberId, Long feedId, CommentRequestDto commentRequestDto) {
 
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Member does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
 
         Feed feed = feedRepository.findById(feedId)
-                .orElseThrow(() -> new IllegalArgumentException("Feed does not exist"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED));
 
         // 부모 댓글 조회
         Comment parentComment = null;
         if (commentRequestDto.getParentId() != null) {
             parentComment = commentRepository.findById(commentRequestDto.getParentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent comment does not exist"));
+                    .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_COMMENT));
         }
 
         if (parentComment != null && !parentComment.getFeed().equals(feed)) {
-            throw new IllegalArgumentException("Parent comment does not belong to the feed");
+            throw new NotFoundException(ErrorCode.NOT_FOUND_PARENT_COMMENT);
         }
 
         // Comment 생성
@@ -64,11 +69,11 @@ public class CommentServiceImpl implements CommentService{
 
         // 댓글 조회
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("Comment does not exist"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_COMMENT));
 
         // 대댓글인지 확인 (필요 시 추가 검증)
         if (commentRequestDto.isChildComment() && comment.getParent() == null) {
-            throw new IllegalArgumentException("This comment is not a child comment");
+            throw new NotFoundException(ErrorCode.NOT_FOUND_COMMENT);
         }
 
         // 댓글 내용 수정
@@ -85,11 +90,11 @@ public class CommentServiceImpl implements CommentService{
     public CommentChildResponseDto createChildComment(Long parentId, CommentRequestDto requestDto, Long memberId) {
 
         Comment parentComment = commentRepository.findById(parentId)
-                .orElseThrow(() -> new IllegalArgumentException("Parent comment does not exist"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_PARENT_COMMENT));
 
         // 사용자 조회
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Member does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
 
         // 대댓글 생성시 검증 필요?
 
@@ -110,7 +115,7 @@ public class CommentServiceImpl implements CommentService{
     @Override
     public CommentResponseDto getComment(Long commentId) {
         Comment comment = commentRepository.findByIdWithReplies(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("Comment does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_COMMENT));
 
         return CommentResponseDto.toDto(comment);
     }
@@ -130,7 +135,7 @@ public class CommentServiceImpl implements CommentService{
     @Override
     public void deleteComment(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("Comment does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_COMMENT));
 
         commentRepository.delete(comment);
     }
