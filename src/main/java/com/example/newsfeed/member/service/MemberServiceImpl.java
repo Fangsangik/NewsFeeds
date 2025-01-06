@@ -123,7 +123,7 @@ public class MemberServiceImpl implements MemberService {
     @Transactional(readOnly = true)
     public MemberResponseDto getMemberById(Long id) {
         return new MemberResponseDto(
-                memberRepository.findByIdAndNotDeleted(id).orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."))
+                memberRepository.findByIdAndNotDeleted(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER))
         );
     }
 
@@ -133,7 +133,7 @@ public class MemberServiceImpl implements MemberService {
     public MemberResponseDto getMemberByFeedId(Long feedId) {
         // 피드 ID로 작성자(Member)를 조회
         Member member = memberRepository.findMemberByFeedId(feedId)
-                .orElseThrow(() -> new IllegalArgumentException("Member not found for feedId: " + feedId));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_POST));
 
         // Member 엔터티를 MemberResponseDto로 변환하여 반환
         return MemberResponseDto.toDto(member);
