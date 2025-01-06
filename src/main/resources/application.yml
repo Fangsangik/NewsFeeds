@@ -42,6 +42,11 @@ spring:
         org.hibernate.SQL: ${SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_SQL}
         org.hibernate.type.descriptor.sql.BasicBinder: ${SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER}
 
+data:
+  redis:
+    host: ${SPRING_REDIS_HOST}
+    port: ${SPRING_REDIS_PORT}
+
 server:
   tomcat:
     uri-encoding: ${SERVER_TOMCAT_URI_ENCODING}

@@ -24,10 +24,8 @@ public class JwtHandShakeInterceptor implements HandshakeInterceptor {
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
-
         try {
-            //Http 요청 Header는 같은 키를 여러번 갖을 수 있음
-            //Http 스팩당 하나의 헤더 키에 여러값 갖을 수 있기 때문에 List로 반환
+            log.info("WebSocket Handshake 시작");
             List<String> header = request.getHeaders().get("Authorization");
             if (header == null || header.isEmpty()) {
                 log.error("Websocket Handshake Error: No Token");
@@ -35,12 +33,15 @@ public class JwtHandShakeInterceptor implements HandshakeInterceptor {
             }
 
             String jwtToken = header.get(0).replace("Bearer ", "");
+            log.info("WebSocket Token: {}", jwtToken);
+
             if (jwtToken != null && jwtProvider.validateToken(jwtToken)) {
                 Long memberId = jwtProvider.getUserIdFromToken(jwtToken);
                 attributes.put("memberId", memberId);
-                log.info("Websocket Handshake Success");
+                log.info("WebSocket Handshake Success, 사용자 ID: {}", memberId);
                 return true;
             }
+
             log.warn("Websocket Handshake Error: Invalid Token");
             return false;
         } catch (Exception e) {
@@ -48,6 +49,7 @@ public class JwtHandShakeInterceptor implements HandshakeInterceptor {
             return false;
         }
     }
+
 
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler, Exception exception) {

@@ -1,12 +1,15 @@
 package com.example.newsfeed.message.controller;
 
+import com.example.newsfeed.message.dto.MessagePayload;
 import com.example.newsfeed.message.service.ChatMessagePublisher;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
-@RequestMapping("/chat")
 public class ChatController {
 
     public final ChatMessagePublisher chatMessagePublisher;
@@ -15,15 +18,12 @@ public class ChatController {
         this.chatMessagePublisher = chatMessagePublisher;
     }
 
-    @MessageMapping("/send")
-    public void sendMessage(String message) {
-        System.out.println("WebSocket으로 받은 메시지: " + message);
-        try {
-            chatMessagePublisher.publish("chat", message);
-            System.out.println("Redis로 퍼블리시 성공: " + message);
-        } catch (Exception e) {
-            System.err.println("Redis 퍼블리시 실패: " + e.getMessage());
-        }
+    @MessageMapping("/sendMessage")
+    @SendTo("/sub/chat/room")
+    public MessagePayload sendMessage(MessagePayload messagePayload, SimpMessageHeaderAccessor headerAccessor) {
+        log.info("WebSocket으로 수신된 메시지: {}", messagePayload);
+        chatMessagePublisher.publish("chat", messagePayload);
+        return messagePayload;
     }
 
     /**

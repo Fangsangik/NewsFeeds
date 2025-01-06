@@ -26,18 +26,18 @@ public class RedisConfig {
      *
      *
      * @param redisConnectionFactory : Redis의 연결을 서정
-     * @param listenerAdapter : 메세지를 처리하는 Listener를 어뎁터 형태로 등록
+     * @param messageListenerAdapter : 메세지를 처리하는 Listener를 어뎁터 형태로 등록
      *
      * ChannelTopic : 특정 채널이나 패턴을 구독
      * @return
      */
     @Bean
-    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory redisConnectionFactory,
-                                                                       MessageListenerAdapter listenerAdapter) {
-
+    public RedisMessageListenerContainer redisMessageListenerContainer(
+            RedisConnectionFactory redisConnectionFactory,
+            MessageListenerAdapter messageListenerAdapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(redisConnectionFactory);
-        container.addMessageListener(listenerAdapter, new ChannelTopic("chat"));
+        container.addMessageListener(messageListenerAdapter, new ChannelTopic("chat"));
         return container;
     }
 
