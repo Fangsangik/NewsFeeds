@@ -4,6 +4,138 @@
 ## 👨‍💻 About Project :
 ## 👨‍💻 ERD :
 ## 👨‍💻 API : 
+## 👨‍💻 About Project
+
+## 1. MVP1
+###  Member
+ - create
+     1. 회원 생성시 PasswordEncoder를 활용해, 비밀번호 암호화
+     2. 회원에 대한 각종 정보 생성후 JWT 토큰 발급
+   
+- update
+     1.  회원 정보 수정, 수정시 비밀번호 확인 필요
+    
+- findOrCreateMember
+     1. 카카오로 로그인 한 회원 바로 회원 가입 진행
+     우선 카카오 회원 조회를 한 후 생성, => 회원 조회 or 생성 해서 가입한 적이 없다면 바로 로그인시 가입 처리
+
+- getMemberById
+     1. 회원 아이디 조회
+
+- getMemberByFeedId
+     1. 피드 아이디 기반 회원 조회
+     2. 이 기능이 Feed Service에 들어가는게 맞는지 아님 MemberService에 들어가는게 맞는지 고민이 되었다. MVP 2 작성시 위치 변겅 가능
+
+- deleteMemberById
+     1. 회원 삭제시 softDelete & 삭제시 비밀번호 검증 필요
+
+- changePassword
+     1. 비밀번호 변경
+     2. 오래된 비밀번호와, 신규 비밀번호를 입력 단, 기존 비밀번호와 신규 비밀번호가 동일하면 안됨
+
+### Feed
+- createFeed
+     1. 피드 생성, 단 생성 전에 해당 회원에 대한 pk값 검증
+     2. 피드 작성시 해당 위치를 입력하면 현 주소 나옴.
+
+- getFeed
+     1. 피드에 대한 정보 가져옴
+
+- getFeedsByMemberId
+     1. 회원 아이디 기반 피드 조회
+     2. MemberService에 getMemberByFeedId의 기능과 바꿔야 하는건 아니지에 대한 고민 MVP2때 변경 가능성 있음
+
+- getAllFeedsOrderByLikeCount
+     1. 피드 좋아요가 많은 순으로 정렬. 좋아요가 많이 찍힐 수록 인기 개시물이기 때문에 내림차순으로 정렬 할 수 있도록 함
+
+- updateFeed
+     1. 피드 정보 수정.
+     2. 위치, 주소, 이미지, content, title등 정보 수정 가능
+
+- deleteFeed
+     1. 해당 피드 삭제
+
+### Friend 
+- addFriend
+     1. 친구 pk 값으로 조회 후 친구 신청 기능.
+     2. 단 Session이 보내는 사람의 pk 값과 동일하지 않다면, 보낼 수 없다. 사용자가 로그인을 하지 않았고, 친구 요청을 보낸 적이 없는데 임의로 누군가, 해당 사용자 아이디로 다른 사용자에게 보내면 안된다고 생각이 들어 Session 값을 검증 하도록 했다. 
+     3. 또한 이미 친구 관계라면 다시 한번 친구 요청을 보낼 수 없다.
+
+- acceptFriendRequest
+     1. 친구 요청 수락
+     2. Session이 해당 로그인 사람의 아이디와 동일하지 않다면 친구 수락 할 수 없음
+     3. ACCEPTED로 변경 되면서 친구 요청 수락
+
+- findSenderInfo
+     1. 보낸 사람의 정보를 알아야 할 필요성이 있다고 생각해 이 기능을 넣었다. 모르는 사람일 경우 누군지 확인할 필요성이 있다고 생각이 들었다.
+        한번쯤은 사용자 관점에서 보고 생각해 위 기능을 만들었다.
+
+- findReceivedFriendRequests
+     1. 친구 요청이 온 request를 수락 전에 확인 할 수 있으며, 수락을 하면 해당 Request는 사라진다.
+
+- findFriendList
+     1. 친구 전체 목록 조회
+
+- deleteFriend
+     1.  친구 삭제 기능
+ 
+### Like
+- like
+     1. 좋아요 기능
+        피드에 좋아요를 누를 수 있는 기능을 만들었다.
+- disLike 
+     1. 좋아요 취소 기능
+        좋아요를 누르지 않은 개시물에는 좋아요 취소를 할 수 없고, 좋아요가 눌린 첫번 째 값을 제거
+
+- getLikeCount
+     1. 해당 피드의 좋아요 수 확인 가능
+
+### Auth 
+- 일반 User Login
+  회원 가입 후, 해당 email & password 입력하면 Login 가능.
+  
+- Kakao 로그인
+  카카오 외부 API를 받아 로그인 가능. 카카오에서 AccessToken을 받은 후 클라이언트가 전달한 카카오 AccessToken을
+  내 Application 사용을 위한 token으로 재발급해서 로그인 가능.
+
+- JWT + Session의 혼합
+1. 세션을 선택한 이유는 우선 웹 서버에 저장을 하기 때문에 매번 Application을 실행 할때마다 새로운 Session을 형성해, 보안적인 면에서 쿠키보다 좋다고 느꼈다. 어떤걸 선택하던, 개발 애플리케이션의 방향성에 따라 다르겠지만, 보안에 좀더 초점을 두고 작업을 진해하고 싶었다.
+
+2. Interceptor를 선택 한 이유
+Filter와 인터셉터는 MVC에서 잡는가 아니면 DispathcerServlet에서 잡는가의 위치 차이라고 생각한다. 단 두개의 필요성은 모든 인증인가를 Controller에서 작업을 진행하면 중복 코드 증가하고, 수정 필요시 작업이 번거로워지기 때문에 두 기능을 사용 한다.
+그리고 이번에 나는 Intercpetor를 사용했다.
+
+3. Interceptor + Session + JWT를 왜 사용 했는가?
+우선 MVP1에서는 Session과 인터셉터를 이용해 인증 인가 부분을 처리를 했다. 그리고 JWT를 추가해 인터셉터에서 JWT 유효성 검증 및 사용자를 식별 하는 용도로 사용했다. MVP2에서 Spring Security를 도입해 인터셉터와 세션을 대체하고 JWT를 적극 더 활용하기 위해 JWT를 MVP1에서 넣은 것도 없지 않아 있다. 
+
+### Message 
+- 메시지를 보내면 MySQL에 보내고, 보낸 Message를 받는 User가 읽음 처리로 하면 MySQL에서 해당 메시지가 읽음 처리로 변경
+  1) 처음에는 관계형 DB로 Chatting Program을 작서했다. 하지만 관계형 DB만 사용했을 경우 대량의 동시성 요청 처리가 올 경우에는 동시성 처리 하는데 한계가 있어, 병목 현성이 발생 가능
+  2) 쓰기 작업 부담에 대한 부분도 있었다. 매번 메시지 전송 시 데이터를 영구적으로 저장해야 하고, Transaction 관리와 디스크 I/O 작업이 매번 필요 했다.
+  3) 확장성의 부족 또한 고민을 안 할 수 없었다. 관계형 DB는 Scale Up에 더 적합하다고 알고 있고, Scale Out은 가능할 수는 있지만 어렵다고 알고 있다. 채팅 시스템은 사용자와 메시지 수가 증가 하면서 수평 확장이 더 적헙하다. 관계형 DB에 데이터 분할을 적용하면 복잡성이 증가할 수도 있다.
+  4) 메시지를 저장하고 읽기 쓰기를 위해서는 Transaction이 필요하다. 락의 경우 다수의 클라이언트가 동일한 데이터를 읽거나 쓰려고 하면 테이블에 락이나 행락으로 인한 대기 시간이 증가할 수 있다.
+
+- 이런 Side Effect가 있어 관계형 DB 대신, Redis 사용하는 방법을 채택 했다.
+  1) Redis의 경우 Scale out에 용이하고, 대량의 데이터를 빠르게 처리 가능.
+  2) Redis는 어떤 방형으로 사용하느냐에 따라 달라지겠지만, 나의 경우에는 읽기와 쓰기가 매우 빠른 점을 이용하기로 했다.
+  3) Redis는 pub/sub 기능을 제공하기 때문에 채팅 프로그램에 더욱 적합 하다고 판단.
+  4) Redis라고 모든 것이 좋다고 할 수 없다. 메모리 기반 데이터 저장소이기 때문에 서버 다운되면 모든 데이터 소멸
+  5) 그래서 Redis에 저장된 메시지를 관계형 DB에 저장하는 방법을 생각해봤다.
+
+- Socket과 SSE의 고민
+  1) 처음 생각 한 방법은 SSE 방법이다.
+  2) SSE(Server-Sent Events)는 서버에서 클라이언트로 단방향 메시지를 보내는 기술이다.
+  3) 구현은 간편하고, 서버에서 클라이언트로 메시지를 보내는 방식이기 때문에 서버의 부하를 줄일 수 있다.
+  4) 하지만 SSE는 HTTP/1.1 기반으로 동작하기 때문에 HTTP/2와 같은 최신 프로토콜을 사용할 수 없고,
+  5) 서버에 부하가 많아지면 성능이 저하될 수 있다.
+그래서 SSE 방법을 사용하지 않고 WebSocket을 사용하기로 결정 
+
+### 👨‍💻 확장 & 생각해 봐야 할 요소들 
+MVP1에서는 성능 보다는 기본적인 필요한 기능들을 채워넣는 것이 1차 목표였고, Redis와 Socket 연동에는 실패 했지만 연동까지가 목표였다. 
+Security를 넣는 대신 Interceptor와 Session을 활용해 Security가 왜 필요한지, 그리고 Security룰 활용하지 않는 환경에서 라면 Session과 인터셉터 처리를 할 줄 알아야 한다고 생각이 들었다.
+
+MVP2에서는 TestCode, Security, Socket과 Redis 연동, Redis와 MySQL의 DB 적합성, 동시성 문제에 대해 고민을 해보겠다. 
+ 
 ## 🧨 Trouble Shooting
 ### Member
 Refactoring : sender와 receiver의 mapping id 값이 잘못 설정 되어 있었음
