@@ -1,5 +1,9 @@
 package com.example.newsfeed.friend.service;
 
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.InvalidInputException;
+import com.example.newsfeed.exception.NoAuthorizedException;
+import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.friend.dto.FriendListDto;
 import com.example.newsfeed.friend.dto.FriendRequestDto;
 import com.example.newsfeed.friend.dto.FriendResponseDto;
@@ -14,6 +18,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.example.newsfeed.exception.ErrorCode.*;
 
 
 @Service
@@ -31,18 +37,18 @@ public class FriendServiceImpl implements FriendService {
     public FriendResponseDto addFriend(Long memberId, FriendRequestDto friendRequestDto) {
         // 요청 발신자가 세션 사용자와 동일한지 확인
         if (!memberId.equals(friendRequestDto.getSenderId())) {
-            throw new IllegalArgumentException("권한이 없습니다. 요청 발신자가 세션 사용자와 다릅니다.");
+            throw new NoAuthorizedException(NO_AUTHOR);
         }
 
         Member sender = memberRepository.findById(friendRequestDto.getSenderId())
-                .orElseThrow(() -> new IllegalArgumentException("발신자 회원이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
 
         Member receiver = memberRepository.findById(friendRequestDto.getReceiverId())
-                .orElseThrow(() -> new IllegalArgumentException("수신자 회원이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FRIEND_REQUEST));
 
         // 중복된 친구 요청 확인
         if (isAlreadyFriend(sender, receiver)) {
-            throw new IllegalArgumentException("이미 친구 관계입니다.");
+            throw new InvalidInputException(ALREADY_FRIEND);
         }
 
         Friend friend = Friend.builder()
@@ -57,7 +63,7 @@ public class FriendServiceImpl implements FriendService {
     @Transactional
     public FriendResponseDto acceptFriendRequest(Long friendId, Long memberId) {
         Friend friend = friendRepository.findBySenderAndReceiver(friendId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("친구 요청이 존재하지 않습니다."));
+                .orElseThrow(() -> new NoAuthorizedException(NO_AUTHOR_APPROVE));
 
         // 요청 수신자가 세션 사용자와 동일한지 확인
         friend.acceptMemberSession(memberId);
@@ -119,7 +125,7 @@ public class FriendServiceImpl implements FriendService {
     @Transactional
     public void deleteFriend(Long friendId) {
         Friend friend = friendRepository.findById(friendId)
-                .orElseThrow(() -> new IllegalArgumentException("친구 요청이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_FRIEND_REQUEST));
 
         friendRepository.delete(friend);
     }
