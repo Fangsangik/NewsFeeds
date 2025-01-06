@@ -1,70 +1,68 @@
 package com.example.newsfeed.constants.config;
 
-import com.example.newsfeed.interceptor.*;
+import com.example.newsfeed.auth.jwt.filter.JwtFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.web.filter.CharacterEncodingFilter;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+@EnableWebSecurity
+public class WebConfig {
+    private final JwtFilter jwtFilter;
+    private final AuthenticationProvider authenticationProvider;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
+    private final AccessDeniedHandler accessDeniedHandler;
 
-    private static final String[] USER_ROLE_REQUIRED_PATH_PATTERNS = {"/feeds/*", "/comments/*", "/likes/*", "/messages/*"};
-    private static final String ADMIN_ROLE_REQUIRED_PATH_PATTERN = "/admins/*";
+    private static final String[] WHITELIST = {
+            "/ouaht/**", "/kakao/**"};
 
-    private static final String[] WHITE_LIST = {"/members/signup", "/error", "/oauth/*", "/kakao/*", "/oauth/refresh"};
-
-    private final AuthInterceptor authInterceptor;
-
-    private final KakaoInterceptor kakaoInterceptor;
-
-    private final UserInterceptor userInterceptor;
-
-    private final AdminInterceptor adminInterceptor;
-
-
-    public WebConfig(AuthInterceptor authInterceptor, KakaoInterceptor kakaoInterceptor, UserInterceptor userInterceptor, AdminInterceptor adminInterceptor) {
-        this.authInterceptor = authInterceptor;
-        this.kakaoInterceptor = kakaoInterceptor;
-        this.userInterceptor = userInterceptor;
-        this.adminInterceptor = adminInterceptor;
-    }
-
-
-    /**
-     * 인터셉터의 우선순위와 Path를 설정한다.
-     *
-     * @param registry
-     */
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(authInterceptor)
-                .excludePathPatterns(WHITE_LIST)
-                .addPathPatterns("/**") // 모든 경로 적용
-                .order(Ordered.HIGHEST_PRECEDENCE);
-
-        registry.addInterceptor(userInterceptor)
-                .excludePathPatterns(WHITE_LIST)
-                .addPathPatterns(USER_ROLE_REQUIRED_PATH_PATTERNS)
-                .order(Ordered.HIGHEST_PRECEDENCE + 1);
-
-        registry.addInterceptor(kakaoInterceptor)
-                .excludePathPatterns(WHITE_LIST)
-                .addPathPatterns("/**")
-                .order(Ordered.HIGHEST_PRECEDENCE + 2);
-
-        registry.addInterceptor(adminInterceptor)
-                .excludePathPatterns(WHITE_LIST)
-                .addPathPatterns(ADMIN_ROLE_REQUIRED_PATH_PATTERN)
-                .order(Ordered.HIGHEST_PRECEDENCE + 3);
+    public WebConfig(JwtFilter jwtFilter, AuthenticationProvider authenticationProvider, AuthenticationEntryPoint authenticationEntryPoint, AccessDeniedHandler accessDeniedHandler) {
+        this.jwtFilter = jwtFilter;
+        this.authenticationProvider = authenticationProvider;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Bean
-    public CharacterEncodingFilter characterEncodingFilter() {
-        CharacterEncodingFilter filter = new CharacterEncodingFilter();
-        filter.setEncoding("UTF-8");
-        filter.setForceEncoding(true);
-        return filter;
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(AbstractHttpConfigurer::disable) // CORS 비활성화
+                .csrf(AbstractHttpConfigurer::disable) // CSRF 비활성화
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(WHITELIST).permitAll() // 화이트리스트 URL 허용
+                        .requestMatchers("/admin/**").hasRole("ADMIN") // ADMIN 역할 필요
+                        .requestMatchers("/user/**").hasRole("USER") // USER 역할 필요
+                        .anyRequest().authenticated() // 나머지는 인증 필요
+                )
+                .exceptionHandling(handler -> handler
+                        .authenticationEntryPoint(authenticationEntryPoint) // 인증 실패 처리
+                        .accessDeniedHandler(accessDeniedHandler) // 권한 부족 처리
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // JWT를 사용하므로 STATELESS 설정
+                )
+                .authenticationProvider(authenticationProvider) // 사용자 정의 AuthenticationProvider 추가
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // JWT 필터 추가
+
+        return http.build();
+    }
+
+    /**
+     * 사용자 권한 계층 설정
+     * @return RoleHierarchy
+     */
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy("ROLE_ADMIN > ROLE_USER");
     }
 }
