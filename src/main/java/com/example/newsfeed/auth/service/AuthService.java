@@ -5,6 +5,9 @@ import com.example.newsfeed.auth.jwt.entity.JwtToken;
 import com.example.newsfeed.auth.jwt.repository.TokenRepository;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.InvalidInputException;
+import com.example.newsfeed.exception.NoAuthorizedException;
 import com.example.newsfeed.member.config.PasswordEncoder;
 import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.repository.MemberRepository;
@@ -36,14 +39,14 @@ public class AuthService {
     public void login(LoginRequestDto requestDto) {
 
         Member member = memberRepository.findByEmail(requestDto.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Email does not exist"));
+                .orElseThrow(() -> new InvalidInputException(ErrorCode.EMAIL_NOT_EXIST));
 
         if (!passwordEncoder.matches(requestDto.getPassword(), member.getPassword())) {
-            throw new IllegalArgumentException("Password does not match");
+            throw new InvalidInputException(ErrorCode.WRONG_PASSWORD);
         }
 
         if (tokenRepository.existsByMemberEmailNot(requestDto.getEmail())) {
-            throw new IllegalStateException("You are already logged in with another account. Please log out first.");
+            throw new InvalidInputException(ErrorCode.ALREADY_LOGIN);
         }
 
 
@@ -75,11 +78,11 @@ public class AuthService {
     // 개발 단계에서만 사용 예정
     public String reissueToken(String email, String password) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Email does not exist"));
+                .orElseThrow(() -> new InvalidInputException(ErrorCode.EMAIL_NOT_EXIST));
 
         //  저절로 인코딩 값이 들어가는데, refresh token이 만료되었을 때, 인코딩된 password가 들어가야 하는지 ??
         if (!member.getPassword().equals(password)) {
-            throw new IllegalArgumentException("Password does not match");
+            throw new InvalidInputException(ErrorCode.WRONG_PASSWORD);
         }
 
         return jwtProvider.generateTokens(member.getId(), Role.USER, LoginType.NORMAL_USER).get("accessToken");
@@ -88,7 +91,7 @@ public class AuthService {
     @Transactional
     public void logout(Long memberId) {
         JwtToken jwtToken = tokenRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Token does not exist"));
+                .orElseThrow(() -> new NoAuthorizedException(ErrorCode.JWT_TOKEN_EXPIRED));
         tokenRepository.delete(jwtToken);
     }
 }
