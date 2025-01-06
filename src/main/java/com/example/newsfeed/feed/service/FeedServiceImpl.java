@@ -1,5 +1,7 @@
 package com.example.newsfeed.feed.service;
 
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.feed.dto.FeedRequestDto;
 import com.example.newsfeed.feed.dto.FeedResponseDto;
 import com.example.newsfeed.feed.dto.FeedUpdateResponseDto;
@@ -16,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.example.newsfeed.exception.ErrorCode.*;
 
 @Service
 public class FeedServiceImpl implements FeedService {
@@ -35,7 +39,7 @@ public class FeedServiceImpl implements FeedService {
     public FeedResponseDto createFeed(Long memberId, FeedRequestDto feedRequestDto) {
         // Check if the member exists
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Member does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
 
         // Get the address from the latitude and longitude
         String address = kakaoGeocodingService.getAddress(feedRequestDto.getLatitude(), feedRequestDto.getLongitude());
@@ -53,7 +57,7 @@ public class FeedServiceImpl implements FeedService {
     public FeedResponseDto getFeed(Long feedId) {
         // Check if the feed exists
         Feed feed = feedRepository.findById(feedId)
-                .orElseThrow(() -> new IllegalArgumentException("Feed does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_NEWSFEED));
 
         return FeedResponseDto.toDto(feed);
     }
@@ -81,7 +85,7 @@ public class FeedServiceImpl implements FeedService {
     public FeedUpdateResponseDto updateFeed(Long feedId, FeedRequestDto feedRequestDto) {
         // Check if the feed exists
         Feed feed = feedRepository.findById(feedId)
-                .orElseThrow(() -> new IllegalArgumentException("Feed does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_NEWSFEED));
 
         // Update the feed
         feed.update(feedRequestDto.getTitle(), feedRequestDto.getContent());
@@ -94,7 +98,7 @@ public class FeedServiceImpl implements FeedService {
     public void deleteFeed(Long feedId) {
         // Check if the feed exists
         Feed feed = feedRepository.findById(feedId)
-                .orElseThrow(() -> new IllegalArgumentException("Feed does not exist"));
+                .orElseThrow(() -> new NotFoundException(NOT_FOUND_NEWSFEED));
 
         // Delete the feed
         feedRepository.delete(feed);
