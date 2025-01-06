@@ -2,6 +2,7 @@ package com.example.newsfeed.auth.jwt.service;
 
 import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.member.type.Role;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,4 +94,16 @@ public class JwtProvider {
                 .get("role", String.class));
     }
 
+    public String getUsername(String token) {
+        Claims claims = this.getClaims(token);
+        return claims.getSubject();
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
 }
