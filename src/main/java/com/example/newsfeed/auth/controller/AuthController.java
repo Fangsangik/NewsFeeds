@@ -29,9 +29,7 @@ public class AuthController {
 
     // 기존 토큰 갱신 (refresh token)
     @PostMapping("/refresh")
-    public ResponseEntity<Map<String, String>> refreshAccessToken(
-            @RequestAttribute("memberId") Long memberId,
-            @RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, String>> refreshAccessToken (@RequestBody Map<String, String> request) {
         String refreshToken = request.get("refreshToken");
         String newAccessToken = authService.refreshAccessToken(refreshToken);
 
@@ -39,9 +37,13 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<CommonResponse<String>> logout
-            (@RequestParam Long memberId) {
-        authService.logout(memberId);
+    public ResponseEntity<CommonResponse<String>> logout(@RequestHeader("Authorization") String authorizationHeader) {
+        // Authorization 헤더에서 토큰 추출
+        String accessToken = authorizationHeader.replace("Bearer ", "");
+
+        // 로그아웃 처리
+        authService.logout(accessToken);
+
         return ResponseEntity.ok(new CommonResponse<>("로그아웃 성공"));
     }
 
