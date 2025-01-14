@@ -6,7 +6,6 @@ import com.example.newsfeed.feed.repository.FeedRepository;
 import com.example.newsfeed.like.dto.LikeResponseDto;
 import com.example.newsfeed.like.entity.Like;
 import com.example.newsfeed.like.repository.LikeRepository;
-import com.example.newsfeed.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,24 +16,20 @@ public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
     private final FeedRepository feedRepository;
-    private final MemberRepository memberRepository;
 
-    public LikeServiceImpl(LikeRepository likeRepository, FeedRepository feedRepository, MemberRepository memberRepository) {
+    public LikeServiceImpl(LikeRepository likeRepository, FeedRepository feedRepository) {
         this.likeRepository = likeRepository;
         this.feedRepository = feedRepository;
-        this.memberRepository = memberRepository;
     }
 
     @Transactional
     @Override
-    public LikeResponseDto like(Long memberId, Long feedId) {
-        Like like = likeRepository.findByFeedIdAndMemberId(feedId, memberId)
+    public LikeResponseDto like(Long feedId) {
+        Like like = likeRepository.findById(feedId)
                 .orElseGet(() -> {
                     Like newLike = Like.builder()
                             .feed(feedRepository.findById(feedId)
                                     .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED)))
-                            .member(memberRepository.findById(memberId)
-                                    .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_MEMBER)))
                             .likeCount(0)
                             .build();
                     likeRepository.save(newLike); // 새 Like는 저장
@@ -50,8 +45,8 @@ public class LikeServiceImpl implements LikeService {
 
     @Transactional
     @Override
-    public LikeResponseDto disLike(Long memberId, Long feedId) {
-        List<Like> likes = likeRepository.findAllByFeedIdAndMemberId(feedId, memberId);
+    public LikeResponseDto disLike(Long feedId) {
+        List<Like> likes = likeRepository.findByFeedId(feedId);
 
         if (likes.size() > 1) {
             // 중복 데이터를 제거하고 하나만 유지
