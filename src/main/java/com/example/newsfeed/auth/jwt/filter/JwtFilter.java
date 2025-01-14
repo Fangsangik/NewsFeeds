@@ -1,6 +1,9 @@
 package com.example.newsfeed.auth.jwt.filter;
 
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
+import com.example.newsfeed.auth.jwt.service.UserDetailsImpl;
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.NoAuthorizedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,13 +55,18 @@ public class JwtFilter extends OncePerRequestFilter {
 
         //토큰에서 userName을 추출
         String username = this.jwtProvider.getUsername(token);
+        Long memberIdFromToken = this.jwtProvider.getMemberId(token);
 
         //username에 해당하는 사용자 찾음
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(username);
+
+        // 해당 userId와 userDetails에 있는 id와 동일한지 확인
+        if (!memberIdFromToken.equals(userDetails.getMemberId())) {
+            throw new NoAuthorizedException(ErrorCode.NO_AUTHOR);
+        }
 
         //SecurityContext에 인증 객체 저장
         this.setAuthentication(request, userDetails);
-
     }
 
     /**
