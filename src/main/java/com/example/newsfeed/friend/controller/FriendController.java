@@ -1,10 +1,7 @@
 package com.example.newsfeed.friend.controller;
 
-import com.example.newsfeed.constants.response.CommonResponse;
-import com.example.newsfeed.friend.dto.FriendListDto;
-import com.example.newsfeed.friend.dto.FriendRequestDto;
-import com.example.newsfeed.friend.dto.FriendResponseDto;
-import com.example.newsfeed.friend.dto.FriendSenderResponseDto;
+import com.example.newsfeed.auth.util.AuthenticatedMemberUtil;
+import com.example.newsfeed.friend.dto.*;
 import com.example.newsfeed.friend.service.FriendService;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -20,57 +17,58 @@ public class FriendController {
         this.friendService = friendService;
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<CommonResponse<FriendResponseDto>> addFriend
-            (@RequestAttribute(name = "memberId") Long memberId,
-             @RequestBody FriendRequestDto friendRequestDto) {
-        FriendResponseDto friend = friendService.addFriend(memberId, friendRequestDto);
-        return ResponseEntity.ok(new CommonResponse<>("친구 신청 완료", friend));
+
+    @PostMapping
+    public ResponseEntity<FriendResponseDto> addFriend(@RequestBody FriendRequestDto friendRequestDto) {
+
+        Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+
+        FriendResponseDto response = friendService.addFriend(friendRequestDto, memberId);
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/accept")
-    public ResponseEntity<CommonResponse<FriendResponseDto>> acceptFriend
-            (@RequestAttribute(name = "memberId") Long memberId,
-             @RequestParam Long friendId) {
-        FriendResponseDto friend = friendService.acceptFriendRequest(friendId, memberId);
-        return ResponseEntity.ok(new CommonResponse<>("친구 수락 완료", friend));
+    @PatchMapping("/accept")
+    public ResponseEntity<FriendResponseDto> acceptFriendRequest(@RequestBody FriendRequestDto friendRequestDto) {
+
+        Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+
+        FriendResponseDto response = friendService.acceptFriendRequest(friendRequestDto, memberId);
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/senders/{senderId}")
-    public ResponseEntity<CommonResponse<Page<FriendSenderResponseDto>>> getSenderInfoList
-            (@RequestAttribute(name = "memberId") Long memberId,
-             @PathVariable Long senderId,
-             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-             @RequestParam(value = "size", required = false, defaultValue = "10") int size) {
-        Page<FriendSenderResponseDto> friendRequest = friendService.findSenderInfo(senderId, page, size);
-        return ResponseEntity.ok(new CommonResponse<>("친구 요청 아이디 조회", friendRequest));
+    @GetMapping("/sent")
+    public ResponseEntity<Page<FriendSenderResponseDto>> findSentRequests(@RequestParam (defaultValue = "0") int page, @RequestParam (defaultValue = "10") int size) {
+
+        Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+
+        Page<FriendSenderResponseDto> response = friendService.findSenderInfo(memberId, page, size);
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/receivers/{receiverId}")
-    public ResponseEntity<CommonResponse<Page<FriendSenderResponseDto>>> getRequestedInfo
-            (@RequestAttribute(name = "memberId") Long memberId,
-             @PathVariable Long receiverId,
-             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-             @RequestParam(value = "size", required = false, defaultValue = "10") int size) {
-        Page<FriendSenderResponseDto> friendRequest = friendService.findReceivedFriendRequests(receiverId, page, size);
-        return ResponseEntity.ok(new CommonResponse<>("친구 요청 받은사람 조회", friendRequest));
+    @GetMapping("/received")
+    public ResponseEntity<Page<FriendRequestResponseDto>> findReceivedRequests(@RequestParam (defaultValue = "0") int page, @RequestParam (defaultValue = "10") int size) {
+
+        Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+        Page<FriendRequestResponseDto> response = friendService.findReceivedFriendRequests(memberId, page, size);
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/members/{memberId}")
-    public ResponseEntity<CommonResponse<Page<FriendListDto>>> getFriendList
-            (
-             @PathVariable Long memberId,
-             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-             @RequestParam(value = "size", required = false, defaultValue = "10") int size) {
-        Page<FriendListDto> friendList = friendService.findFriendList(memberId, page, size);
-        return ResponseEntity.ok(new CommonResponse<>("친구 목록 조회", friendList));
+    @GetMapping
+    public ResponseEntity<Page<FriendListDto>> findFriends(
+            @RequestParam (defaultValue = "0") int page, @RequestParam (defaultValue = "10") int size) {
+
+        Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+
+        Page<FriendListDto> response = friendService.findFriendList(memberId, page, size);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{friendId}")
-    public ResponseEntity<CommonResponse<Page<Void>>> deleteComment
-            (@RequestAttribute(name = "memberId") Long memberId,
-             @PathVariable Long friendId) {
+    public ResponseEntity<Void> deleteFriend (@PathVariable Long friendId) {
+
+        Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+
         friendService.deleteFriend(friendId);
-        return ResponseEntity.ok(new CommonResponse<>("친구 삭제 완료"));
+        return ResponseEntity.noContent().build();
     }
 }
