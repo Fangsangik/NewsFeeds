@@ -1,7 +1,6 @@
 package com.example.newsfeed.auth.jwt.service;
 
-import com.example.newsfeed.auth.type.LoginType;
-import com.example.newsfeed.member.entity.Member;
+import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.member.type.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -29,7 +28,7 @@ public class JwtProvider {
     }
 
     // 토큰 생성
-    public Map<String, String> generateTokens(Member member, Role role, LoginType loginType) {
+    public Map<String, String> generateTokens(JwtMemberDto member) {
         Map<String, String> tokens = new HashMap<>();
 
         // Access Token 생성
@@ -38,8 +37,8 @@ public class JwtProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", member.getEmail());
         claims.put("memberId", member.getId());
-        claims.put("role", role.name());
-        claims.put("loginType", loginType.name());
+        claims.put("role", member.getRole().name());
+        claims.put("loginType", member.getLoginType().name());
 
         String accessToken = Jwts.builder()
                 .setClaims(claims)
