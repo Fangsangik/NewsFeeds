@@ -8,10 +8,10 @@ import java.util.List;
 
 public interface CommentService {
 
-    CommentResponseDto createComment(Long memberId, Long feedId, CommentRequestDto commentRequestDto);
-    CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto);
+    CommentResponseDto createComment(CommentRequestDto commentRequestDto, Long authenticatedMemberId);
+    CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto, Long authenticatedMemberId);
     CommentResponseDto getComment(Long commentId);
-    CommentChildResponseDto createChildComment(Long parentId, CommentRequestDto requestDto, Long memberId);
+    CommentChildResponseDto createChildComment(CommentRequestDto requestDto, Long authenticatedMemberId);
     void deleteComment(Long commentId);
     List<CommentResponseDto> getCommentsByFeedId(Long feedId);
 }
