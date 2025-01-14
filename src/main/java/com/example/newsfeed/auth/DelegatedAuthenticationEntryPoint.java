@@ -3,6 +3,7 @@ package com.example.newsfeed.auth;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class DelegatedAuthenticationEntryPoint implements AuthenticationEntryPoi
      */
     private final HandlerExceptionResolver resolver;
 
-    public DelegatedAuthenticationEntryPoint(HandlerExceptionResolver resolver) {
+    public DelegatedAuthenticationEntryPoint(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
         this.resolver = resolver;
     }
 
