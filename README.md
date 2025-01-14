@@ -427,3 +427,57 @@ AuthService에 login 메서드에 추가
         tokenRepository.delete(jwtToken);
     }
 ```
+
+## MVP 2 
+1. Spring Security 사용 
+- securityFilterChain
+  - 인증이 필요 하지 않은 부분을 제외 한 나머지 로그인 을 한 후 인증이 될 수 있도록 설계
+- roleHierarchy
+  - 권한에 따른 계층 설정 
+ 
+2. SpringSecurity를 사용하면서, 각 기능에 있는 Controller에 있던 Session을 걷어내고, AuthenticatedMemberUtil이라는 클래스를 만들어 controller에 적용, 단 아직 해결 하지 못한 부분은
+   controller에 ```Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();``` 중복적으로 남아 해결 방법에 대해 고민 해야 할 것 같다.
+
+고민 해본 방향 
+```
+2. SpringSecurity를 사용하면서, 각 기능에 있는 Controller에 있던 Session을 걷어내고, AuthenticatedMemberUtil이라는 클래스를 만들어 controller에 적용, 단 아직 해결 하지 못한 부분은
+   controller에 ```Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();``` 중복적으로 남아 해결 방법에 대해 고민 해야 할 것 같다.
+
+=> @ControllerAdvice을 활용해보자. 모든 Controller에서 memberId를 공통적으로 사용할 수 있도록 모델에 바인딩 하면 코드 중복을 줄일 수 있지 않을까?? 
+```
+
+3. 왜 Security를 선택 했는가?
+   filter와 인터셉터를 직접 처리해주는 것도 좋다. 하지만, 각 기능별 Filter 혹은 인터셉터를 지속적으로 클래스에 만들다 보면, 클래스가 많아져, 보다 구조가 복잡해 질 것 같다 라는 생각이 들었고,
+   Security를 사용함으로써 인증 인가 처리 부분에 대해 좀더 보다 쉽게 구현 할 수 있고, 조작 할 수 있어서 선택을 했다.
+   하지만 직접 필터와 인터셉터를 직접 구현하는 것보다 좋은가? 라고 하면 내가 시큐리티에 대해 미숙해서 그런지는 모르겠지만, 둘의 보안성 측면에서의 차이는 모르겠다. 물론 CORS, CSRF 등에 대한 부분은 좋을 수 있다. 
+   단순 작업을 좀더 간편화 해주는 것일 뿐이지, 크게 성능이 올라간다거나 그런 면에서의 장점으 못느꼈던 것 같다. Security를 사용하면서 느낀점은 유지 보수 성 면에서 좋다이다. 
+
+
+### 🥵 Trouble Shooting 
+1. Session 값 걷어내면서의 문제점 발생
+Security를 정확히 잘 활용하지 못한 상태에서 Session 값을 걷어내다 보니, Security의 값은 SecurityContextHolder에서 검증을 진행해야 하는데 그게 아닌 RequestAttribute로 진행하려고 하니, 적용이 안되었다. 
+
+그래서 처음 생각한 방향은 @AuthenticationPrincipal을 각 Controller 마다 적용 하는 방법이었다.
+그러나, 생각보다 계속 중복 코드가 많았고 이를 Util로 빼야 겠다고 생각이 들어 Util class로 변경했다. 
+하지만 일부 중복은 피하지 못한 것 같다. 
+
+2. Friend 요청을 보낼 때 해당 로그인한 User가 아닌데 친구 요청 및 수락을 보낼 수 있던 상황
+Session 값을 걷어내고 잘못된 방법으로 해당 User인지 비교하는 validate를 처리 해주지 않아 문제가 발생
+FriendService에 적용하는게 맞다고 생각했다. 향후 validate가 증가할 경우, controller에 처리하게 되면 controller의 복잡성이 증가하고,
+역할에 대해 맞지 않는다고 생각했다. 
+```
+        if (!authenticatedMemberId.equals(friendRequestDto.getReceiverId())) {
+            throw new NoAuthorizedException(ErrorCode.NO_AUTHOR);
+        }
+```
+validate 처리 해준 후 해결 할 수 있었다. 
+
+3. Security를 사용함으로써 userId 값 비교가 아닌 username의 비교
+UserDetailService에서 username 값을 가져와야 했다. 하지만 userId로 값을 계속 가져오고 있던 탓에 
+인증인가 부분에서 계속 막혔었고, 문제를 발견 후, userId 값을 가져오던 부분을 username으로 가져 올 수 있도록 변경
+그리고 나중에 찾아보니 custom하게 userId로도 사용 할수 있다는 것을 알았다.
+하지만 고민인 부분은 session에서야 pk 값으로 조회해서 가져오는게 빠르고 보안적 측면에서도 좋았지만, token에 각종 정보가 담겨있을때는 token에 있는 정보 값중 하나를 가져와서 비교할때 pk값을 가져와야 할때와 email을 가져와야 할때의 장단점의 구분이 아직 명확이 되지는 않는다.
+email의 경우 : 사용 친화적이고, pk 값은 노출하지 않는 장점이 있지만 변경 가능성이 매우 높아 식별자로 사용하기는 애매하지 않을까 라는 생각이 든다.
+pk : 단순 숫자이기 때문에 정보가 노출된다 하더라도, 문제가 되는 부분은 크게 없다고 생각이 든다. 
+
+
