@@ -7,12 +7,12 @@ import lombok.Getter;
 
 @Getter
 public class FeedRequestDto {
-    private String title;
-    private String content;
-    private String image;
-    private String address;
-    private Double latitude;
-    private Double longitude;
+    private final String title;
+    private final String content;
+    private final String image;
+    private final String address;
+    private final Double latitude;
+    private final Double longitude;
 
     @Builder
     public FeedRequestDto(String title, String content, String image, String address, Double latitude, Double longitude) {
