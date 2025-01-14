@@ -10,11 +10,10 @@ import java.util.Optional;
 
 public interface LikeRepository extends JpaRepository<Like, Long> {
 
-    Optional<Like> findByFeedIdAndMemberId(Long feedId, Long memberId);
 
     @Query("select sum(l.likeCount) from Like l where l.feed.id = :feedId")
     Long countByFeedId(@Param("feedId") Long feedId);
 
-    @Query("SELECT l FROM Like l WHERE l.feed.id = :feedId AND l.member.id = :memberId")
-    List<Like> findAllByFeedIdAndMemberId(@Param("feedId") Long feedId, @Param("memberId") Long memberId);
+    @Query("SELECT l FROM Like l WHERE l.feed.id = :feedId")
+    List<Like> findByFeedId(Long feedId);
 }
