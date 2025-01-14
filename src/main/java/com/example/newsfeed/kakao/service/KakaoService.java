@@ -4,6 +4,7 @@ import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.kakao.dto.KakaoTokenResponseDto;
 import com.example.newsfeed.kakao.dto.KakaoUserInfoResponseDto;
+import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.service.MemberService;
 import com.example.newsfeed.member.type.Role;
 import lombok.extern.slf4j.Slf4j;
@@ -75,8 +76,8 @@ public class KakaoService {
         String email = userInfo.getKakaoAccount().getEmail();
         String nickname = userInfo.getKakaoAccount().getProfile().getNickname();
 
-        Long memberId = memberService.findOrCreateMember(kakaoId, email, nickname);
-        return jwtProvider.generateTokens(memberId, Role.USER, LoginType.KAKAO_USER);
+        Member member = memberService.findOrCreateMember(kakaoId, email, nickname);
+        return jwtProvider.generateTokens(member, Role.USER, LoginType.KAKAO_USER);
     }
 
     /**
