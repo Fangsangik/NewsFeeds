@@ -4,10 +4,7 @@ import com.example.newsfeed.exception.ErrorCode;
 import com.example.newsfeed.exception.InvalidInputException;
 import com.example.newsfeed.exception.NoAuthorizedException;
 import com.example.newsfeed.exception.NotFoundException;
-import com.example.newsfeed.friend.dto.FriendListDto;
-import com.example.newsfeed.friend.dto.FriendRequestDto;
-import com.example.newsfeed.friend.dto.FriendResponseDto;
-import com.example.newsfeed.friend.dto.FriendSenderResponseDto;
+import com.example.newsfeed.friend.dto.*;
 import com.example.newsfeed.friend.entity.Friend;
 import com.example.newsfeed.friend.repository.FriendRepository;
 import com.example.newsfeed.friend.type.FriendRequestStatus;
@@ -34,10 +31,10 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Transactional
-    public FriendResponseDto addFriend(Long memberId, FriendRequestDto friendRequestDto) {
-        // 요청 발신자가 세션 사용자와 동일한지 확인
-        if (!memberId.equals(friendRequestDto.getSenderId())) {
-            throw new NoAuthorizedException(NO_AUTHOR);
+    public FriendResponseDto addFriend(FriendRequestDto friendRequestDto, Long authenticatedMemberId) {
+
+        if (!authenticatedMemberId.equals(friendRequestDto.getSenderId())) {
+            throw new InvalidInputException(NO_AUTHOR);
         }
 
         Member sender = memberRepository.findById(friendRequestDto.getSenderId())
@@ -61,12 +58,13 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Transactional
-    public FriendResponseDto acceptFriendRequest(Long friendId, Long memberId) {
-        Friend friend = friendRepository.findBySenderAndReceiver(friendId, memberId)
-                .orElseThrow(() -> new NoAuthorizedException(NO_AUTHOR_APPROVE));
+    public FriendResponseDto acceptFriendRequest(FriendRequestDto friendRequestDto, Long authenticatedMemberId) {
+        if (!authenticatedMemberId.equals(friendRequestDto.getReceiverId())) {
+            throw new NoAuthorizedException(ErrorCode.NO_AUTHOR);
+        }
 
-        // 요청 수신자가 세션 사용자와 동일한지 확인
-        friend.acceptMemberSession(memberId);
+        Friend friend = friendRepository.findBySenderAndReceiver(friendRequestDto.getSenderId(), friendRequestDto.getReceiverId())
+                .orElseThrow(() -> new NoAuthorizedException(NO_AUTHOR_APPROVE));
 
         // 친구 요청 상태 업데이트
         friend.setStatus(FriendRequestStatus.ACCEPTED);
@@ -86,23 +84,19 @@ public class FriendServiceImpl implements FriendService {
 
         return friends.map(friend -> new FriendSenderResponseDto(
                 friend.getSender().getName(),
-                friend.getSender().getEmail(),
-                friend.getReceiver().getName(), // 필요한 경우 필드 맞춤 설정
-                friend.getReceiver().getEmail()
+                friend.getSender().getEmail()
         ));
     }
 
     @Transactional(readOnly = true)
     @Override
-    public Page<FriendSenderResponseDto> findReceivedFriendRequests(Long receiverId, int page, int size) {
+    public Page<FriendRequestResponseDto> findReceivedFriendRequests(Long receiverId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
         // Friend 엔터티를 가져옴
         Page<Friend> friends = friendRepository.findReceiverInfo(receiverId, pageable);
 
-        return friends.map(friend -> new FriendSenderResponseDto(
-                friend.getSender().getName(),      // 요청 보낸 사람 이름
-                friend.getSender().getEmail(),     // 요청 보낸 사람 이메일
+        return friends.map(friend -> new FriendRequestResponseDto(
                 friend.getReceiver().getName(),    // 요청 받은 사람 이름
                 friend.getReceiver().getEmail()    // 요청 받은 사람 이메일
         ));
