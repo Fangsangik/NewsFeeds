@@ -28,6 +28,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'org.springframework.session:spring-session-jdbc'
 
+    // spring-security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 

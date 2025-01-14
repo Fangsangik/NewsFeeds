@@ -1,4 +1,5 @@
-package com.example.newsfeed.interceptor;
+package com.example.newsfeed.constants;
+
 
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -62,3 +63,4 @@ public class JwtHandShakeInterceptor implements HandshakeInterceptor {
         }
     }
 }
+

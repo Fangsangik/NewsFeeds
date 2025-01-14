@@ -5,15 +5,11 @@ import lombok.Getter;
 @Getter
 public class FriendSenderResponseDto {
 
-    private String senderEmail;
-    private String senderName;
-    private String receiverName;    // 받는 사람의 이름
-    private String receiverEmail;   // 받는 사람의 이메일
+    private final String senderEmail;
+    private final String senderName;
 
-    public FriendSenderResponseDto(String senderEmail, String senderName, String receiverName, String receiverEmail) {
+    public FriendSenderResponseDto(String senderEmail, String senderName) {
         this.senderEmail = senderEmail;
         this.senderName = senderName;
-        this.receiverName = receiverName;
-        this.receiverEmail = receiverEmail;
     }
 }

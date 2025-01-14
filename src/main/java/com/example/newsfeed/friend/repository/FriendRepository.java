@@ -14,10 +14,10 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
 
     boolean existsBySenderAndReceiver(Member sender, Member receiver);
 
-    @Query("SELECT f FROM Friend f WHERE f.sender.id = :senderId AND f.status = 'REQUESTED'")
+    @Query("SELECT f FROM Friend f JOIN FETCH f.sender s where f.sender.id = :senderId AND f.status = 'REQUESTED'")
     Page<Friend> findSenderInfo(@Param("senderId") Long senderId, Pageable pageable);
 
-    @Query("SELECT f FROM Friend f WHERE f.receiver.id = :receiverId AND f.status = 'REQUESTED'")
+    @Query("SELECT f FROM Friend f JOIN FETCH f.receiver r where f.receiver.id = :receiverId AND f.status = 'REQUESTED'")
     Page<Friend> findReceiverInfo(@Param("receiverId") Long receiverId, Pageable pageable);
 
     @Query("SELECT f FROM Friend f WHERE (f.sender.id = :memberId OR f.receiver.id = :memberId) AND f.status = 'ACCEPTED'")

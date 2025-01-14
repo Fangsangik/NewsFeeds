@@ -41,4 +41,34 @@ public class KakaoGeocodingService {
             throw new IllegalArgumentException("주소를 찾을 수 없습니다.");
         }
     }
+
+
+    /**
+     * 주소를 입력받아 좌표를 반환
+     * 사용 여부 고민중
+     * @param address
+     * @return
+     */
+    public double[] getCoordinates(String address) {
+        String url = String.format("https://dapi.kakao.com/v2/local/search/address.json?query=%s", address);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "KakaoAK " + clientId);
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+
+        JSONObject jsonResponse = new JSONObject(response.getBody());
+        if (!jsonResponse.getJSONArray("documents").isEmpty()) {
+            JSONObject coordinates = jsonResponse
+                    .getJSONArray("documents")
+                    .getJSONObject(0)
+                    .getJSONObject("address");
+            return new double[] {coordinates.getDouble("y"), coordinates.getDouble("x")};
+        } else {
+            throw new IllegalArgumentException("좌표를 찾을 수 없습니다.");
+        }
+    }
 }

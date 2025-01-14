@@ -7,10 +7,14 @@ import lombok.Getter;
 
 @Getter
 public class CommentRequestDto {
-    private Long parentId;
-    private String content;
+    private final Long memberId;
+    private final Long feedId;
+    private final Long parentId;
+    private final String content;
 
-    public CommentRequestDto(Long parentId, String content) {
+    public CommentRequestDto(Long memberId, Long feedId, Long parentId, String content) {
+        this.memberId = memberId;
+        this.feedId = feedId;
         this.parentId = parentId;
         this.content = content;
     }

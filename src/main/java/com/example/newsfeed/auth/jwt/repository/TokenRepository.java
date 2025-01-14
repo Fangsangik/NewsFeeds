@@ -8,7 +8,8 @@ import java.util.Optional;
 
 public interface TokenRepository extends JpaRepository<JwtToken, Long> {
 
-    Optional<JwtToken> findByMemberId(Long memberId);
+    // 이메일 기반으로 JWT 토큰 조회
+    Optional<JwtToken> findByMemberEmail(String email);
 
     boolean existsByMemberEmailNot(String email);
 }

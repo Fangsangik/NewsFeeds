@@ -1,8 +1,8 @@
 package com.example.newsfeed.member.service;
 
+import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
-import com.example.newsfeed.member.config.PasswordEncoder;
 import com.example.newsfeed.exception.*;
 import com.example.newsfeed.kakao.entity.KakaoMember;
 import com.example.newsfeed.kakao.repository.KakaoMemberRepository;
@@ -11,6 +11,7 @@ import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.repository.MemberRepository;
 import com.example.newsfeed.member.type.Role;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,12 +55,16 @@ public class MemberServiceImpl implements MemberService {
         Member savedMember = memberRepository.save(newMember);
         log.debug("저장된 Member 비밀번호: {}", savedMember.getPassword());
 
-        // JWT 토큰 생성
-        Map<String, String> tokens = jwtProvider.generateTokens(
+        // JwtMemberDto 생성
+        JwtMemberDto jwtMemberDto = new JwtMemberDto(
                 savedMember.getId(),
+                savedMember.getEmail(),
                 savedMember.getRole(),
                 LoginType.NORMAL_USER
         );
+
+        // JWT 토큰 생성
+        Map<String, String> tokens = jwtProvider.generateTokens(jwtMemberDto);
 
         // 토큰 정보를 포함한 DTO 반환
         return MemberLoginResponseDto.builder()
@@ -92,7 +97,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Transactional
     @Override
-    public Long findOrCreateMember(Long kakaoId, String email, String nickname) {
+    public JwtMemberDto findOrCreateMember(Long kakaoId, String email, String nickname) {
         // KakaoMember 조회 또는 생성
         KakaoMember kakaoMember = kakaoMemberRepository.findByKakaoId(kakaoId)
                 .orElseGet(() -> {
@@ -105,7 +110,7 @@ public class MemberServiceImpl implements MemberService {
                 });
 
         // Member 조회 또는 생성
-        Member member = memberRepository.findByKakaoMember(kakaoMember)
+        Member member =  memberRepository.findByKakaoMember(kakaoMember)
                 .orElseGet(() -> {
                     Member newMember = Member.builder()
                             .name(nickname)
@@ -116,9 +121,9 @@ public class MemberServiceImpl implements MemberService {
                     return memberRepository.save(newMember);
                 });
 
-        // 최종적으로 Member의 ID 반환
-        return member.getId();
+        return new JwtMemberDto(member.getId(), member.getEmail(), member.getRole(), LoginType.KAKAO_USER);
     }
+
     @Override
     @Transactional(readOnly = true)
     public MemberResponseDto getMemberById(Long id) {

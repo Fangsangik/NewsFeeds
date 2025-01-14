@@ -1,9 +1,11 @@
 package com.example.newsfeed.auth.jwt.service;
 
-import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.member.type.Role;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class JwtProvider {
 
@@ -25,20 +28,21 @@ public class JwtProvider {
     }
 
     // 토큰 생성
-    public Map<String, String> generateTokens(Long memberId, Role role, LoginType loginType) {
+    public Map<String, String> generateTokens(JwtMemberDto member) {
         Map<String, String> tokens = new HashMap<>();
 
         // Access Token 생성
         Date now = new Date();
         Date accessTokenExpireDate = new Date(now.getTime() + 1000L * 60 * 60); // 1시간 유효기간
         Map<String, Object> claims = new HashMap<>();
-        claims.put("memberId", memberId);
-        claims.put("role", role.name());
-        claims.put("loginType", loginType.name());
+        claims.put("email", member.getEmail());
+        claims.put("memberId", member.getId());
+        claims.put("role", member.getRole().name());
+        claims.put("loginType", member.getLoginType().name());
 
         String accessToken = Jwts.builder()
                 .setClaims(claims)
-                .setSubject(String.valueOf(memberId))
+                .setSubject(member.getEmail())
                 .setIssuedAt(now)
                 .setExpiration(accessTokenExpireDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -47,7 +51,7 @@ public class JwtProvider {
         // Refresh Token 생성
         Date refreshTokenExpireDate = new Date(now.getTime() + 1000L * 60 * 60 * 24 * 7); // 7일 유효기간
         String refreshToken = Jwts.builder()
-                .setSubject(String.valueOf(memberId))
+                .setSubject(member.getEmail())
                 .setIssuedAt(now)
                 .setExpiration(refreshTokenExpireDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -93,4 +97,24 @@ public class JwtProvider {
                 .get("role", String.class));
     }
 
+    public String getUsername(String token) {
+        Claims claims = this.getClaims(token);
+        log.info("Claims during token generation: {}", claims);
+        log.info("Extracted username from token: {}", claims.getSubject());
+        return claims.getSubject();
+
+    }
+
+    public Long getMemberId(String token) {
+        Claims claims = this.getClaims(token);
+        return claims.get("memberId", Long.class);
+    }
+
+    private Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
 }
