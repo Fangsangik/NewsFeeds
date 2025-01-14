@@ -37,6 +37,14 @@ public class UserDetailsImpl implements UserDetails {
         return this.member.getPassword();
     }
 
+    public Long getMemberId() {
+        return this.member.getId();
+    }
+
+    public String getEmail() {
+        return this.member.getEmail();
+    }
+
     /**
      * 사용자 자격 증명 반환
      * @return 사용자 이름
