@@ -24,7 +24,7 @@ public class WebConfig {
     private final AccessDeniedHandler accessDeniedHandler;
 
     private static final String[] WHITELIST = {
-            "/ouaht/**", "/kakao/**"};
+            "/oauth/**", "/kakao/**", "/members/signup"};
 
     public WebConfig(JwtFilter jwtFilter, AuthenticationProvider authenticationProvider, AuthenticationEntryPoint authenticationEntryPoint, AccessDeniedHandler accessDeniedHandler) {
         this.jwtFilter = jwtFilter;
