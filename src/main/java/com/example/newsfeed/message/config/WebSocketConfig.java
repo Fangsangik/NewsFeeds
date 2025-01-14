@@ -1,7 +1,7 @@
 package com.example.newsfeed.message.config;
 
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
-import com.example.newsfeed.interceptor.JwtHandShakeInterceptor;
+import com.example.newsfeed.constants.JwtHandShakeInterceptor;
 import com.example.newsfeed.message.repository.MessageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
