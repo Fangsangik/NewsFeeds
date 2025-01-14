@@ -8,10 +8,10 @@ import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.exception.ErrorCode;
 import com.example.newsfeed.exception.InvalidInputException;
 import com.example.newsfeed.exception.NoAuthorizedException;
-import com.example.newsfeed.member.config.PasswordEncoder;
 import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.repository.MemberRepository;
 import com.example.newsfeed.member.type.Role;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,11 +50,11 @@ public class AuthService {
         }
 
 
-        // 3. 기존 토큰 삭제 (PK를 사용)
-        Optional<JwtToken> existingToken = tokenRepository.findByMemberId(member.getId());
+        // 3. 기존 토큰 삭제
+        Optional<JwtToken> existingToken = tokenRepository.findByMemberEmail(member.getEmail());
         existingToken.ifPresent(tokenRepository::delete);
 
-        Map<String, String> tokens = jwtProvider.generateTokens(member.getId(), Role.USER, LoginType.NORMAL_USER);
+        Map<String, String> tokens = jwtProvider.generateTokens(member, Role.USER, LoginType.NORMAL_USER);
 
         JwtToken newJwtToken = JwtToken.builder()
                 .member(member)
@@ -71,8 +71,12 @@ public class AuthService {
         if (!jwtProvider.validateToken(refreshToken)) {
             throw new IllegalArgumentException("Invalid Refresh Token");
         }
-        Long userId = jwtProvider.getUserIdFromToken(refreshToken);
-        return jwtProvider.generateTokens(userId, Role.USER, LoginType.NORMAL_USER).get("accessToken");
+        String email = jwtProvider.getUsername(refreshToken);
+
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new InvalidInputException(ErrorCode.EMAIL_NOT_EXIST));
+
+        return jwtProvider.generateTokens(member, Role.USER, LoginType.NORMAL_USER).get("accessToken");
     }
 
     // 개발 단계에서만 사용 예정
@@ -85,12 +89,20 @@ public class AuthService {
             throw new InvalidInputException(ErrorCode.WRONG_PASSWORD);
         }
 
-        return jwtProvider.generateTokens(member.getId(), Role.USER, LoginType.NORMAL_USER).get("accessToken");
+        return jwtProvider.generateTokens(member, Role.USER, LoginType.NORMAL_USER).get("accessToken");
     }
 
     @Transactional
-    public void logout(Long memberId) {
-        JwtToken jwtToken = tokenRepository.findByMemberId(memberId)
+    public void logout(String accessToken) {
+        if (!jwtProvider.validateToken(accessToken)) {
+            throw new NoAuthorizedException(ErrorCode.JWT_TOKEN_EXPIRED);
+        }
+
+        // 토큰에서 이메일 또는 사용자 ID 추출
+        String email = jwtProvider.getUsername(accessToken);
+
+        // JWT 토큰 삭제
+        JwtToken jwtToken = tokenRepository.findByMemberEmail(email)
                 .orElseThrow(() -> new NoAuthorizedException(ErrorCode.JWT_TOKEN_EXPIRED));
         tokenRepository.delete(jwtToken);
     }
