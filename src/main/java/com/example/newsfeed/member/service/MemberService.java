@@ -1,5 +1,6 @@
 package com.example.newsfeed.member.service;
 
+import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.member.dto.*;
 
 public interface MemberService {
@@ -9,5 +10,5 @@ public interface MemberService {
     void deleteMemberById(Long id, String password);
     MemberResponseDto changePassword(String oldPassword, String newPassword, Long memberId);
     MemberResponseDto getMemberByFeedId(Long feedId);
-    Long findOrCreateMember(Long kakaoId, String email, String nickname);
+    JwtMemberDto findOrCreateMember(Long kakaoId, String email, String nickname);
 }

@@ -1,6 +1,7 @@
 package com.example.newsfeed.auth.service;
 
 import com.example.newsfeed.auth.dto.LoginRequestDto;
+import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.auth.jwt.entity.JwtToken;
 import com.example.newsfeed.auth.jwt.repository.TokenRepository;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
@@ -49,12 +50,14 @@ public class AuthService {
             throw new InvalidInputException(ErrorCode.ALREADY_LOGIN);
         }
 
-
-        // 3. 기존 토큰 삭제
+        // 기존 토큰 삭제
         Optional<JwtToken> existingToken = tokenRepository.findByMemberEmail(member.getEmail());
         existingToken.ifPresent(tokenRepository::delete);
 
-        Map<String, String> tokens = jwtProvider.generateTokens(member, Role.USER, LoginType.NORMAL_USER);
+        // JwtMemberDto 생성
+        JwtMemberDto jwtMemberDto = getJwtMemberDto(member);
+
+        Map<String, String> tokens = jwtProvider.generateTokens(jwtMemberDto);
 
         JwtToken newJwtToken = JwtToken.builder()
                 .member(member)
@@ -67,6 +70,7 @@ public class AuthService {
         tokenRepository.save(newJwtToken);
     }
 
+
     public String refreshAccessToken(String refreshToken) {
         if (!jwtProvider.validateToken(refreshToken)) {
             throw new IllegalArgumentException("Invalid Refresh Token");
@@ -76,7 +80,10 @@ public class AuthService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidInputException(ErrorCode.EMAIL_NOT_EXIST));
 
-        return jwtProvider.generateTokens(member, Role.USER, LoginType.NORMAL_USER).get("accessToken");
+
+        JwtMemberDto jwtMemberDto = getJwtMemberDto(member);
+
+        return jwtProvider.generateTokens(jwtMemberDto).get("accessToken");
     }
 
     // 개발 단계에서만 사용 예정
@@ -89,7 +96,19 @@ public class AuthService {
             throw new InvalidInputException(ErrorCode.WRONG_PASSWORD);
         }
 
-        return jwtProvider.generateTokens(member, Role.USER, LoginType.NORMAL_USER).get("accessToken");
+        JwtMemberDto jwtMemberDto = getJwtMemberDto(member);
+
+        return jwtProvider.generateTokens(jwtMemberDto).get("accessToken");
+    }
+
+    private static JwtMemberDto getJwtMemberDto(Member member) {
+        JwtMemberDto jwtMemberDto = new JwtMemberDto(
+                member.getId(),
+                member.getEmail(),
+                member.getRole(),
+                LoginType.NORMAL_USER
+        );
+        return jwtMemberDto;
     }
 
     @Transactional

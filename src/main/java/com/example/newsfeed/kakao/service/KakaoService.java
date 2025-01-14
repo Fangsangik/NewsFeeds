@@ -1,5 +1,6 @@
 package com.example.newsfeed.kakao.service;
 
+import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.type.LoginType;
 import com.example.newsfeed.kakao.dto.KakaoTokenResponseDto;
@@ -76,8 +77,18 @@ public class KakaoService {
         String email = userInfo.getKakaoAccount().getEmail();
         String nickname = userInfo.getKakaoAccount().getProfile().getNickname();
 
-        Member member = memberService.findOrCreateMember(kakaoId, email, nickname);
-        return jwtProvider.generateTokens(member, Role.USER, LoginType.KAKAO_USER);
+        JwtMemberDto member = memberService.findOrCreateMember(kakaoId, email, nickname);
+
+        // JwtMemberDto 생성
+        JwtMemberDto jwtMemberDto = new JwtMemberDto(
+                member.getId(),
+                member.getEmail(),
+                member.getRole(),
+                LoginType.KAKAO_USER
+        );
+
+
+        return jwtProvider.generateTokens(jwtMemberDto);
     }
 
     /**
