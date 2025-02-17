@@ -1,7 +1,6 @@
 # 🎈 newsFeed 🎈
-## 🛠️ Tools : 
+## 🛠️ Tools :  <img src="https://img.shields.io/badge/mysql-4479A1?style=for-the-badge&logo=mysql&logoColor=white"> <img src="https://img.shields.io/badge/spring-6DB33F?style=for-the-badge&logo=github&logoColor=Green"> <img alt="Java" src ="https://img.shields.io/badge/Java-007396.svg?&style=for-the-badge&logo=Java&logoColor=white"/>  <img alt="Java" src ="https://img.shields.io/badge/intellijidea-000000.svg?&style=for-the-badge&logo=intellijidea&logoColor=white"/> <img src="https://img.shields.io/badge/Socket.io-FF0000?style=flat-square&logo=socket.io&logoColor=white"> <img src="https://img.shields.io/badge/Redis-FF0000?style=flat-square&logo=redis&logoColor=white">
 ## 🥅 Period : 2024/12/16 ~ 2024/12/31
-## 👨‍💻 About Project :
 ## 👨‍💻 ERD :
 ## 👨‍💻 API : 
 ## 👨‍💻 About Project :
