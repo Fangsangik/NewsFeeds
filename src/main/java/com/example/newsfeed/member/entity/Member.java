@@ -1,7 +1,7 @@
 package com.example.newsfeed.member.entity;
 
-import com.example.newsfeed.auth.type.LoginType;
-import com.example.newsfeed.constants.BaseEntity;
+import com.example.newsfeed.member.type.LoginType;
+import com.example.newsfeed.constants.entity.BaseEntity;
 import com.example.newsfeed.friend.entity.Friend;
 import com.example.newsfeed.kakao.entity.KakaoMember;
 import com.example.newsfeed.member.type.Role;
@@ -53,11 +53,8 @@ public class Member extends BaseEntity {
     @JoinColumn(name = "kakao_member_id")
     private KakaoMember kakaoMember;
 
-    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
-    private List<Message> sentMessages = new ArrayList<>();
-
-    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL)
-    private List<Message> receivedMessages = new ArrayList<>();
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    private List<Message> messages = new ArrayList<>();
 
 
     @Builder
@@ -88,6 +85,13 @@ public class Member extends BaseEntity {
 
     public void updatedPassword(String newPassword) {
         this.password = newPassword;
+    }
+
+    public void updateMember(String name, String phoneNumber, String address, String image) {
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.address = address;
+        this.image = image;
     }
 }
 
