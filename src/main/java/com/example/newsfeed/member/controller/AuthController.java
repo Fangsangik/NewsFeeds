@@ -1,18 +1,16 @@
-package com.example.newsfeed.auth.controller;
+package com.example.newsfeed.member.controller;
 
-import com.example.newsfeed.auth.dto.AuthLoginDto;
-import com.example.newsfeed.auth.dto.LoginRequestDto;
-import com.example.newsfeed.auth.service.AuthService;
+import com.example.newsfeed.member.dto.LoginRequestDto;
+import com.example.newsfeed.member.dto.LoginResponseDto;
+import com.example.newsfeed.member.service.AuthService;
 import com.example.newsfeed.constants.response.CommonResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
-@RequestMapping("/oauth")
+@RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -22,9 +20,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<CommonResponse<AuthLoginDto>> login(@RequestBody LoginRequestDto requestDto) {
-        authService.login(requestDto);
-        return ResponseEntity.ok(new CommonResponse<>("로그인 성공"));
+    public ResponseEntity<CommonResponse<LoginResponseDto>> login(@RequestBody LoginRequestDto requestDto) {
+        LoginResponseDto login = authService.login(requestDto);
+        return ResponseEntity.ok(new CommonResponse<>("로그인 성공", login));
     }
 
     // 기존 토큰 갱신 (refresh token)
