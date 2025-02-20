@@ -1,8 +1,7 @@
 package com.example.newsfeed.member.service;
 
 import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
-import com.example.newsfeed.auth.jwt.service.JwtProvider;
-import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.member.type.LoginType;
 import com.example.newsfeed.exception.*;
 import com.example.newsfeed.kakao.entity.KakaoMember;
 import com.example.newsfeed.kakao.repository.KakaoMemberRepository;
@@ -15,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 
 import static com.example.newsfeed.exception.ErrorCode.*;
 
@@ -24,13 +22,11 @@ import static com.example.newsfeed.exception.ErrorCode.*;
 @Service
 public class MemberServiceImpl implements MemberService {
 
-    private final JwtProvider jwtProvider;
     private final MemberRepository memberRepository;
     private final KakaoMemberRepository kakaoMemberRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public MemberServiceImpl(JwtProvider jwtProvider, MemberRepository memberRepository, KakaoMemberRepository kakaoMemberRepository, PasswordEncoder passwordEncoder) {
-        this.jwtProvider = jwtProvider;
+    public MemberServiceImpl(MemberRepository memberRepository, KakaoMemberRepository kakaoMemberRepository, PasswordEncoder passwordEncoder) {
         this.memberRepository = memberRepository;
         this.kakaoMemberRepository = kakaoMemberRepository;
         this.passwordEncoder = passwordEncoder;
@@ -38,7 +34,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     @Transactional
-    public MemberLoginResponseDto createMember(MemberRequestDto memberDto) {
+    public MemberResponseDto createMember(MemberRequestDto memberDto) {
         // 이메일 중복 검사
         log.info("회원 중복 검사 : {}", memberDto.getEmail());
         if (memberRepository.existsByEmail(memberDto.getEmail())) {
@@ -50,49 +46,28 @@ public class MemberServiceImpl implements MemberService {
         log.debug("암호화된 비밀번호: {}", memberDto.getPassword());
 
         Member newMember = MemberRequestDto.toEntity(memberDto, encodedPassword);
-        log.debug("Entity 생성 후 비밀번호: {}", newMember.getPassword());
+        memberRepository.save(newMember);
 
-        Member savedMember = memberRepository.save(newMember);
-        log.debug("저장된 Member 비밀번호: {}", savedMember.getPassword());
+        log.info("회원 생성 완료: {}", newMember.getEmail());
 
-        // JwtMemberDto 생성
-        JwtMemberDto jwtMemberDto = new JwtMemberDto(
-                savedMember.getId(),
-                savedMember.getEmail(),
-                savedMember.getRole(),
-                LoginType.NORMAL_USER
-        );
-
-        // JWT 토큰 생성
-        Map<String, String> tokens = jwtProvider.generateTokens(jwtMemberDto);
-
-        // 토큰 정보를 포함한 DTO 반환
-        return MemberLoginResponseDto.builder()
-                .id(savedMember.getId())
-                .accessToken(tokens.get("accessToken"))
-                .refreshToken(tokens.get("refreshToken"))
-                .build();
+        return MemberResponseDto.toDto(newMember);
     }
 
     @Override
     @Transactional
-    public MemberUpdateResponseDto updateMember(Long userId, MemberUpdateRequestDto requestDto) {
-        log.info("회원 update 유효성 검사 : {}", userId);
-
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_MEMBER));
+    public MemberUpdateResponseDto updateMember(Member member, MemberUpdateRequestDto requestDto) {
+        Member findMember = memberRepository.findByIdOrElseThrow(member.getId());
 
         // 비밀번호 검증
-        if (!passwordEncoder.matches(requestDto.getPassword(), member.getPassword())) {
+        if (!passwordEncoder.matches(requestDto.getPassword(), findMember.getPassword())) {
             throw new InvalidInputException(WRONG_PASSWORD);
         }
 
         // 회원 정보 업데이트
-        requestDto.updatedMember(requestDto);
+        findMember.updateMember(requestDto.getName(), requestDto.getPhoneNumber(), requestDto.getAddress(), requestDto.getImage());
 
         // 저장 후 업데이트된 데이터 반환
-        Member updatedMember = memberRepository.save(member);
-        return MemberUpdateResponseDto.toResponseDto(updatedMember);
+        return MemberUpdateResponseDto.toResponseDto(findMember);
     }
 
     @Transactional
@@ -125,7 +100,6 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public MemberResponseDto getMemberById(Long id) {
         return new MemberResponseDto(
                 memberRepository.findByIdAndNotDeleted(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER))
@@ -144,32 +118,30 @@ public class MemberServiceImpl implements MemberService {
         return MemberResponseDto.toDto(member);
     }
 
-    @Override
     @Transactional
-    public void deleteMemberById(Long id, String password) {
-        Member member = memberRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
+    @Override
+    public void deleteMemberById(Member member, String password) {
+        Member findMember = memberRepository.findByIdOrElseThrow(member.getId());
 
-        if (!passwordEncoder.matches(password, member.getPassword())) {
+        if (!passwordEncoder.matches(password, findMember.getPassword())) {
             throw new InvalidInputException(WRONG_PASSWORD);
         }
 
-        member.markAsDeleted(); // 소프트 삭제
+        findMember.markAsDeleted(); // 소프트 삭제
         memberRepository.save(member);
     }
 
-    @Override
     @Transactional
-    public MemberResponseDto changePassword(String oldPassword, String newPassword, Long memberId) {
+    @Override
+    public MemberResponseDto changePassword(String oldPassword, String newPassword, Member member) {
         // 세션에서 PK 기반으로 조회
-        if (memberId == null) {
+        if (member.getId() == null) {
             throw new InternalServerException(SESSION_TIMEOUT);
         }
 
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
+        Member findMember = memberRepository.findByIdOrElseThrow(member.getId());
 
-        if (!passwordEncoder.matches(oldPassword, member.getPassword())) {
+        if (!passwordEncoder.matches(oldPassword, findMember.getPassword())) {
             throw new InvalidInputException(WRONG_PASSWORD);
         }
 
@@ -178,10 +150,8 @@ public class MemberServiceImpl implements MemberService {
         }
 
         //비밀번호 update
-        member.updatedPassword(passwordEncoder.encode(newPassword));
-        Member updatedMember = memberRepository.save(member);
-
+        findMember.updatedPassword(passwordEncoder.encode(newPassword));
         // 비밀번호 변경 후 세션 무효화
-        return MemberResponseDto.toDto(updatedMember);
+        return MemberResponseDto.toDto(findMember);
     }
 }
