@@ -6,6 +6,8 @@ import com.example.newsfeed.feed.repository.FeedRepository;
 import com.example.newsfeed.like.dto.LikeResponseDto;
 import com.example.newsfeed.like.entity.Like;
 import com.example.newsfeed.like.repository.LikeRepository;
+import com.example.newsfeed.member.entity.Member;
+import com.example.newsfeed.member.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,20 +18,25 @@ public class LikeServiceImpl implements LikeService {
 
     private final LikeRepository likeRepository;
     private final FeedRepository feedRepository;
+    private final MemberRepository memberRepository;
 
-    public LikeServiceImpl(LikeRepository likeRepository, FeedRepository feedRepository) {
+    public LikeServiceImpl(LikeRepository likeRepository, FeedRepository feedRepository, MemberRepository memberRepository) {
         this.likeRepository = likeRepository;
         this.feedRepository = feedRepository;
+        this.memberRepository = memberRepository;
     }
 
     @Transactional
     @Override
-    public LikeResponseDto like(Long feedId) {
+    public LikeResponseDto like(Member member, Long feedId) {
+       if (!memberRepository.existsById(member.getId())) {
+            throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
+       }
+
         Like like = likeRepository.findById(feedId)
                 .orElseGet(() -> {
                     Like newLike = Like.builder()
-                            .feed(feedRepository.findById(feedId)
-                                    .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED)))
+                            .feed(feedRepository.findByIdOrElseThrow(feedId))
                             .likeCount(0)
                             .build();
                     likeRepository.save(newLike); // 새 Like는 저장
@@ -45,7 +52,11 @@ public class LikeServiceImpl implements LikeService {
 
     @Transactional
     @Override
-    public LikeResponseDto disLike(Long feedId) {
+    public LikeResponseDto disLike(Member member, Long feedId) {
+        if (!memberRepository.existsById(member.getId())) {
+            throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
+        }
+
         List<Like> likes = likeRepository.findByFeedId(feedId);
 
         if (likes.size() > 1) {
