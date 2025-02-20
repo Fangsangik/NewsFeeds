@@ -4,14 +4,14 @@ import com.example.newsfeed.friend.entity.Friend;
 import com.example.newsfeed.friend.type.FriendRequestStatus;
 import com.example.newsfeed.member.entity.Member;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 public class FriendRequestDto {
-    private Long senderId;
     private Long receiverId;
 
-    public FriendRequestDto(Long senderId, Long receiverId) {
-        this.senderId = senderId;
+    public FriendRequestDto(Long receiverId) {
         this.receiverId = receiverId;
     }
 

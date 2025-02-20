@@ -2,8 +2,10 @@ package com.example.newsfeed.friend.dto;
 
 import com.example.newsfeed.friend.entity.Friend;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 public class FriendResponseDto {
 
     private Long senderId;
