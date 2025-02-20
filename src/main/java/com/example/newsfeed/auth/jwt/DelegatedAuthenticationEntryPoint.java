@@ -1,4 +1,4 @@
-package com.example.newsfeed.auth;
+package com.example.newsfeed.auth.jwt;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
