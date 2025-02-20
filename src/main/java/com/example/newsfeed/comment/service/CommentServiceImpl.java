@@ -20,7 +20,7 @@ import static com.example.newsfeed.exception.ErrorCode.NOT_FOUND_COMMENT;
 import static com.example.newsfeed.exception.ErrorCode.NOT_FOUND_MEMBER;
 
 @Service
-public class CommentServiceImpl implements CommentService{
+public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final FeedRepository feedRepository;
@@ -34,12 +34,9 @@ public class CommentServiceImpl implements CommentService{
 
     @Transactional
     @Override
-    public CommentResponseDto createComment(CommentRequestDto commentRequestDto, Long authenticatedMemberId) {
+    public CommentResponseDto createComment(CommentRequestDto commentRequestDto, Member member) {
 
-        validateMemberId(!authenticatedMemberId.equals(commentRequestDto.getMemberId()), ErrorCode.NO_AUTHOR);
-
-        Member member = memberRepository.findById(commentRequestDto.getMemberId())
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
+        memberRepository.findByIdOrElseThrow(member.getId());
 
         Feed feed = feedRepository.findById(commentRequestDto.getFeedId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED));
@@ -47,11 +44,8 @@ public class CommentServiceImpl implements CommentService{
         // 부모 댓글 조회
         Comment parentComment = null;
         if (commentRequestDto.getParentId() != null) {
-            parentComment = commentRepository.findById(commentRequestDto.getParentId())
-                    .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_COMMENT));
+            parentComment = commentRepository.findByIdOrElseThrow(commentRequestDto.getParentId());
         }
-
-        validateMemberId(parentComment != null && !parentComment.getFeed().equals(feed), ErrorCode.NOT_FOUND_PARENT_COMMENT);
 
         // Comment 생성
         Comment comment = CommentRequestDto.toEntity(member, feed, commentRequestDto, parentComment);
@@ -65,16 +59,17 @@ public class CommentServiceImpl implements CommentService{
 
     @Transactional
     @Override
-    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto, Long authenticatedMemberId) {
+    public CommentResponseDto updateComment(Long commentId, CommentRequestDto commentRequestDto, Member member) {
 
-        validateMemberId(!authenticatedMemberId.equals(commentRequestDto.getMemberId()), ErrorCode.NO_AUTHOR);
+        memberRepository.findByIdOrElseThrow(member.getId());
 
         // 댓글 조회
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_COMMENT));
+        Comment comment = commentRepository.findByIdOrElseThrow(commentId);
 
         // 대댓글인지 확인 (필요 시 추가 검증)
-        validateMemberId(commentRequestDto.isChildComment() && comment.getParent() == null, ErrorCode.NOT_FOUND_COMMENT);
+        if (commentRequestDto.isChildComment() && comment.getParent() == null) {
+            throw new NotFoundException(ErrorCode.NOT_FOUND_COMMENT);
+        }
 
         // 댓글 내용 수정
         comment.fixComment(commentRequestDto.getContent());
@@ -87,16 +82,13 @@ public class CommentServiceImpl implements CommentService{
 
     @Transactional
     @Override
-    public CommentChildResponseDto createChildComment(CommentRequestDto requestDto, Long authenticatedMemberId) {
-
-        validateMemberId(!authenticatedMemberId.equals(requestDto.getMemberId()), ErrorCode.NO_AUTHOR);
+    public CommentChildResponseDto createChildComment(CommentRequestDto requestDto, Member member) {
 
         Comment parentComment = commentRepository.findByIdWithFeedAndMember(requestDto.getParentId())
                 .orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_PARENT_COMMENT));
 
         // 사용자 조회
-        Member member = memberRepository.findById(requestDto.getMemberId())
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
+        memberRepository.findByIdOrElseThrow(member.getId());
 
         // 대댓글 생성시 검증 필요?
 
@@ -135,16 +127,14 @@ public class CommentServiceImpl implements CommentService{
 
     @Transactional
     @Override
-    public void deleteComment(Long commentId) {
+    public void deleteComment(Member member, Long commentId) {
+        if (memberRepository.existsById(member.getId())) {
+            throw new NotFoundException(NOT_FOUND_MEMBER);
+        }
+
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_COMMENT));
 
         commentRepository.delete(comment);
-    }
-
-    private static void validateMemberId(boolean authenticatedMemberId, ErrorCode noAuthor) {
-        if (authenticatedMemberId) {
-            throw new NotFoundException(noAuthor);
-        }
     }
 }
