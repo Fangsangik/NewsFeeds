@@ -1,5 +1,7 @@
 package com.example.newsfeed.friend.repository;
 
+import com.example.newsfeed.exception.ErrorCode;
+import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.friend.entity.Friend;
 import com.example.newsfeed.member.entity.Member;
 import org.springframework.data.domain.Page;
@@ -23,7 +25,10 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     @Query("SELECT f FROM Friend f WHERE (f.sender.id = :memberId OR f.receiver.id = :memberId) AND f.status = 'ACCEPTED'")
     Page<Friend> findFriendList(@Param("memberId") Long memberId, Pageable pageable);
 
-    @Query("select f from Friend f where f.sender.id = :senderId and f.receiver.id = :receiverId")
+    @Query("select f from Friend f JOIN FETCH f.sender s where f.sender.id = :senderId and f.receiver.id = :receiverId")
     Optional<Friend> findBySenderAndReceiver(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
 
+    default Friend findByIdOrElseThrow(Long friendId) {
+        return findById(friendId).orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_FRIEND_REQUEST));
+    }
 }
