@@ -1,4 +1,4 @@
-package com.example.newsfeed.auth.controller;
+package com.example.newsfeed.member.controller;
 
 import com.example.newsfeed.kakao.service.KakaoService;
 import lombok.extern.slf4j.Slf4j;

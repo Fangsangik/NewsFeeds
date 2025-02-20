@@ -1,6 +1,6 @@
 package com.example.newsfeed.member.dto;
 
-import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.member.type.LoginType;
 import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.type.Role;
 import jakarta.validation.constraints.NotBlank;
@@ -8,11 +8,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 
 @Getter
+@NoArgsConstructor
 public class MemberRequestDto {
 
     @NotBlank(message = "이름은 필수 값 입니다.")

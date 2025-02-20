@@ -68,7 +68,9 @@ public enum ErrorCode {
   NO_AUTHOR("권한이 없습니다.", HttpStatus.UNAUTHORIZED),
   NO_SELF_LIKE("자신이 작성한 게시글과 댓글에 좋아요를 달 수 없습니다.", HttpStatus.UNAUTHORIZED),
   NO_AUTHOR_APPROVE("이 친구 요청을 승인하거나 거절할 권한이 없습니다.", HttpStatus.UNAUTHORIZED),
-  JWT_TOKEN_EXPIRED("토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED);
+  JWT_TOKEN_EXPIRED("토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+
+  NOT_FOUND_FRIEND("친구를 찾을 수 없습니다",HttpStatus.NOT_FOUND);
 
   private final String message;
   private final HttpStatus httpStatus;

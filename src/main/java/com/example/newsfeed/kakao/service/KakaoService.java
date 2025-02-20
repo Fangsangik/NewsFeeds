@@ -2,12 +2,10 @@ package com.example.newsfeed.kakao.service;
 
 import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
-import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.member.type.LoginType;
 import com.example.newsfeed.kakao.dto.KakaoTokenResponseDto;
 import com.example.newsfeed.kakao.dto.KakaoUserInfoResponseDto;
-import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.service.MemberService;
-import com.example.newsfeed.member.type.Role;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;

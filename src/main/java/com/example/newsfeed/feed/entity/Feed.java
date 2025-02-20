@@ -1,19 +1,16 @@
 package com.example.newsfeed.feed.entity;
 import com.example.newsfeed.comment.entity.Comment;
-import com.example.newsfeed.constants.BaseEntity;
+import com.example.newsfeed.constants.entity.BaseEntity;
 import com.example.newsfeed.like.entity.Like;
 import com.example.newsfeed.member.entity.Member;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;

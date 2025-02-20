@@ -1,4 +1,4 @@
-package com.example.newsfeed.auth.config;
+package com.example.newsfeed.constants.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;

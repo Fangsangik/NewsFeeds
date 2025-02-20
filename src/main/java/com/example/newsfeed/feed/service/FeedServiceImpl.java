@@ -36,10 +36,9 @@ public class FeedServiceImpl implements FeedService {
 
     @Transactional
     @Override
-    public FeedResponseDto createFeed(Long memberId, FeedRequestDto feedRequestDto) {
+    public FeedResponseDto createFeed(Member member, FeedRequestDto feedRequestDto) {
         // Check if the member exists
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
+        Member findMember = memberRepository.findByIdOrElseThrow(member.getId());
 
         // 입력값 검증 및 보완
         String address = feedRequestDto.getAddress();
@@ -64,13 +63,12 @@ public class FeedServiceImpl implements FeedService {
         }
 
         // Create a feed
-        Feed feed = FeedRequestDto.toDto(member, feedRequestDto, address);
+        Feed feed = FeedRequestDto.toDto(findMember, feedRequestDto, address);
 
         // Save the feed
         return FeedResponseDto.toDto(feedRepository.save(feed));
     }
 
-    @Transactional(readOnly = true)
     @Override
     public FeedResponseDto getFeed(Long feedId) {
         // Check if the feed exists
@@ -80,8 +78,8 @@ public class FeedServiceImpl implements FeedService {
         return FeedResponseDto.toDto(feed);
     }
 
-    @Transactional(readOnly = true)
     // 회원 아이디 기반 피드 조회
+    @Override
     public List<FeedResponseDto> getFeedsByMemberId(Long memberId) {
         // Feed 엔터티 리스트를 조회
         List<Feed> feeds = feedRepository.findFeedsByMemberId(memberId);
@@ -92,7 +90,6 @@ public class FeedServiceImpl implements FeedService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
     @Override
     public Page<FeedWithLikeCountDto> getAllFeedsOrderByLikeCount(int page, int size) {
         return feedRepository.findAllFeedsOrderByLikeCount(PageRequest.of(page, size));
@@ -100,12 +97,12 @@ public class FeedServiceImpl implements FeedService {
 
     @Transactional
     @Override
-    public FeedUpdateResponseDto updateFeed(Long feedId, FeedRequestDto feedRequestDto) {
-        // Check if the feed exists
-        Feed feed = feedRepository.findById(feedId)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_NEWSFEED));
+    public FeedUpdateResponseDto updateFeed(Member member, Long feedId, FeedRequestDto feedRequestDto) {
+        if (memberRepository.existsById(member.getId())) {
+            throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
+        }
 
-        // Update the feed
+        Feed feed = feedRepository.findByIdOrElseThrow(feedId);
         feed.update(feedRequestDto.getTitle(), feedRequestDto.getContent());
 
         return FeedUpdateResponseDto.toDto(feed);
@@ -113,10 +110,12 @@ public class FeedServiceImpl implements FeedService {
 
     @Transactional
     @Override
-    public void deleteFeed(Long feedId) {
-        // Check if the feed exists
-        Feed feed = feedRepository.findById(feedId)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_NEWSFEED));
+    public void deleteFeed(Member member, Long feedId) {
+        if (memberRepository.existsById(member.getId())) {
+            throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
+        }
+
+        Feed feed = feedRepository.findByIdOrElseThrow(feedId);
 
         // Delete the feed
         feedRepository.delete(feed);
