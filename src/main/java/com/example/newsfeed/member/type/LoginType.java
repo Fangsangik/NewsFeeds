@@ -1,4 +1,4 @@
-package com.example.newsfeed.auth.type;
+package com.example.newsfeed.member.type;
 
 import lombok.Getter;
 
