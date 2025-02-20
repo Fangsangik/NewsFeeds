@@ -1,24 +1,24 @@
-package com.example.newsfeed.auth.service;
+package com.example.newsfeed.member.service;
 
-import com.example.newsfeed.auth.dto.LoginRequestDto;
+import com.example.newsfeed.member.dto.LoginRequestDto;
+import com.example.newsfeed.member.dto.LoginResponseDto;
 import com.example.newsfeed.auth.jwt.dto.JwtMemberDto;
 import com.example.newsfeed.auth.jwt.entity.JwtToken;
 import com.example.newsfeed.auth.jwt.repository.TokenRepository;
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
-import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.member.type.LoginType;
 import com.example.newsfeed.exception.ErrorCode;
 import com.example.newsfeed.exception.InvalidInputException;
 import com.example.newsfeed.exception.NoAuthorizedException;
 import com.example.newsfeed.member.entity.Member;
 import com.example.newsfeed.member.repository.MemberRepository;
-import com.example.newsfeed.member.type.Role;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -37,7 +37,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void login(LoginRequestDto requestDto) {
+    public LoginResponseDto login(LoginRequestDto requestDto) {
 
         Member member = memberRepository.findByEmail(requestDto.getEmail())
                 .orElseThrow(() -> new InvalidInputException(ErrorCode.EMAIL_NOT_EXIST));
@@ -51,41 +51,72 @@ public class AuthService {
         }
 
         // 기존 토큰 삭제
-        Optional<JwtToken> existingToken = tokenRepository.findByMemberEmail(member.getEmail());
-        existingToken.ifPresent(tokenRepository::delete);
+        tokenRepository.deleteByMember(member);
 
         // JwtMemberDto 생성
-        JwtMemberDto jwtMemberDto = getJwtMemberDto(member);
+        JwtMemberDto jwtMemberDto = new JwtMemberDto(
+                member.getId(),
+                member.getEmail(),
+                member.getRole(),
+                LoginType.NORMAL_USER
+        );
 
+        // JWT 토큰 생성
         Map<String, String> tokens = jwtProvider.generateTokens(jwtMemberDto);
 
-        JwtToken newJwtToken = JwtToken.builder()
-                .member(member)
+        // 토큰 저장
+        JwtToken jwtToken = JwtToken.builder()
                 .accessToken(tokens.get("accessToken"))
                 .refreshToken(tokens.get("refreshToken"))
-                .expiredAt(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
-                .issuedAt(new Date(System.currentTimeMillis()))
+                .member(member)
+                .issuedAt(Date.from(Instant.now()))
+                .expiredAt(jwtProvider.getExpiration(tokens.get("accessToken")))
                 .build();
+        tokenRepository.save(jwtToken);
 
-        tokenRepository.save(newJwtToken);
+        // 토큰 정보를 포함한 DTO 반환
+        return LoginResponseDto.builder()
+                .id(member.getId())
+                .accessToken(tokens.get("accessToken"))
+                .refreshToken(tokens.get("refreshToken"))
+                .build();
     }
 
-
+    @Transactional
     public String refreshAccessToken(String refreshToken) {
+        // Refresh Token 검증
         if (!jwtProvider.validateToken(refreshToken)) {
             throw new IllegalArgumentException("Invalid Refresh Token");
         }
+
+        // Refresh Token에서 사용자 이메일 추출
         String email = jwtProvider.getUsername(refreshToken);
 
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidInputException(ErrorCode.EMAIL_NOT_EXIST));
 
-
+        // 새로운 Access Token 및 Refresh Token 생성
         JwtMemberDto jwtMemberDto = getJwtMemberDto(member);
+        Map<String, String> tokens = jwtProvider.generateTokens(jwtMemberDto);
 
-        return jwtProvider.generateTokens(jwtMemberDto).get("accessToken");
+        // 기존 토큰 삭제 및 새로운 토큰 저장
+        JwtToken jwtToken = tokenRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new NoAuthorizedException(ErrorCode.JWT_TOKEN_EXPIRED));
+
+        JwtToken updatedJwtToken = JwtToken.builder()
+                .member(jwtToken.getMember()) // 기존 Member 유지
+                .accessToken(tokens.get("accessToken"))
+                .refreshToken(tokens.get("refreshToken"))
+                .issuedAt(Date.from(Instant.now()))
+                .expiredAt(jwtProvider.getExpiration(tokens.get("accessToken")))
+                .build();
+
+        tokenRepository.save(updatedJwtToken);
+
+        return tokens.get("accessToken");
     }
 
+    @Transactional
     // 개발 단계에서만 사용 예정
     public String reissueToken(String email, String password) {
         Member member = memberRepository.findByEmail(email)
@@ -113,16 +144,12 @@ public class AuthService {
 
     @Transactional
     public void logout(String accessToken) {
+        // Access Token 검증
         if (!jwtProvider.validateToken(accessToken)) {
             throw new NoAuthorizedException(ErrorCode.JWT_TOKEN_EXPIRED);
         }
 
-        // 토큰에서 이메일 또는 사용자 ID 추출
-        String email = jwtProvider.getUsername(accessToken);
-
-        // JWT 토큰 삭제
-        JwtToken jwtToken = tokenRepository.findByMemberEmail(email)
-                .orElseThrow(() -> new NoAuthorizedException(ErrorCode.JWT_TOKEN_EXPIRED));
-        tokenRepository.delete(jwtToken);
+        // Access Token으로 JWT 삭제
+        tokenRepository.deleteByAccessToken(accessToken);
     }
 }
