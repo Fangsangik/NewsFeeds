@@ -1,4 +1,4 @@
-package com.example.newsfeed.constants;
+package com.example.newsfeed.constants.entity;
 
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
