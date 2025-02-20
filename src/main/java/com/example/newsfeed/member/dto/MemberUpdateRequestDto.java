@@ -16,26 +16,4 @@ public class MemberUpdateRequestDto {
     private String phoneNumber;     // 수정할 전화번호
     private String address;         // 수정할 주소
     private String image;           // 수정할 이미지
-
-    public void updatedMember(MemberUpdateRequestDto updatedDto) {
-        if (updatedDto.getName() != null) {
-            this.name = updatedDto.getName();
-        }
-
-        if (updatedDto.getImage() != null) {
-            this.image = updatedDto.getImage();
-        }
-
-        if (updatedDto.getPhoneNumber() != null) {
-            this.phoneNumber = updatedDto.getPhoneNumber();
-        }
-
-        if (updatedDto.getAddress() != null) {
-            this.address = updatedDto.getAddress();
-        }
-    }
-
-    public void updatePassword(String password) {
-        this.password = password;
-    }
 }
