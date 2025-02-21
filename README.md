@@ -4,6 +4,9 @@
 
 **NewsFeed**는 사용자가 작은 일상을 공유할 수 있는 소셜 미디어 플랫폼입니다. 회원 가입 후 게시물을 생성하고, 팔로우, 좋아요, 댓글 및 메신저 기능을 사용할 수 있으며, 사진과 위치 정보를 함께 등록할 수 있습니다.
 
+## 📌 ERD 
+![ERD](https://github.com/user-attachments/assets/b0d8fdf6-2f33-41b0-b27f-a9510207c99c)
+
 ## 🛠️ 기술 스택
 
 - **Backend**: Java, Spring Boot, JPA, QueryDSL, Socket.I/O
