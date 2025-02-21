@@ -81,7 +81,7 @@
 ### 2️⃣ 카카오 로그인 리다이렉트 문제 해결
 
 - **문제점**: 카카오 로그인 이후 리다이렉트 시 이미 사용된 Authorization Code로 인해 인증 실패 발생
-- **해결 방법**: 클라이언트에서 Authorization Code를 관리하지 않고 서버에서 처리하도록 변경
+- **해결 방법**: code 요청을 애플리케이션으로 받는것이 아닌, 직접 카카오톡 서버에 요청하도록 변경
 
 ### 3️⃣ 댓글 기능 개선
 
@@ -124,12 +124,13 @@ if (!authenticatedMemberId.equals(friendRequestDto.getReceiverId())) {
 
 - 기존 방식: `Long memberId = AuthenticatedMemberUtil.getAuthenticatedMemberId();`를 각 컨트롤러에서 반복적으로 호출
 - 개선 방향:
-✅ **@Authentication활용** : 인증이 요구되는 서비스에서 User를 매개변수로 직접 받아 Controller에서 Service호출 전에 검증
+  - **`@Authentication활용`** : 인증이 필요한 서비스의 컨트롤러에서 `UserDetails`를 매개변수로 직접 받아, 인증된 `Member` 정보를 추출할 수 있도록 변경.
+  - 이를 통해, 기존의 `AuthenticatedMemberUtil.getAuthenticatedMemberId();`를 반복적으로 호출하는 방식을 개선하고, 인증 관련 로직을 `Util`로 분리하여 컨트롤러의 역할을 단순화함.
 
 ### 3️⃣ Spring Security 도입 이유
 
-✅ **보안 강화**: CORS, CSRF 보호 및 인증 인가 체계 개선
-✅ **유지보수 용이성**: 개별 Filter 혹은 Interceptor를 계속 추가할 경우 구조가 복잡해질 가능성이 있음 → Security를 도입하여 인증 인가 로직을 중앙에서 관리
+✅ **보안 강화**: CORS, CSRF 보호 및 인증 인가 체계 개선  
+✅ **유지보수 용이성**: 개별 Filter 혹은 Interceptor를 계속 추가할 경우 구조가 복잡해질 가능성이 있음 → Security를 도입하여 인증 인가 로직을 중앙에서 관리  
 ✅ **구현 용이성**: 보안 기능을 직접 구현하는 것보다 Security 프레임워크를 활용하여 빠르고 안정적인 인증 인가 시스템 구축 가능
 
 ### 4️⃣ WebSocket + Redis 사용
