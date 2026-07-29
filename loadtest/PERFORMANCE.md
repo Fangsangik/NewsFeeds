@@ -154,3 +154,42 @@ HikariCP 적용 검증: `last("value") FROM hikaricp_connections_max` = **50** �
 - T=50도 안정적 개선 (TPS +21%, p99 절반).
 - T=100/200 단계는 단발 측정 노이즈로 추정 (mid-run 스냅샷이 우연히 idle 구간). 다음 라운드는 ramp 30s + duration 120s로 늘려서 노이즈 완화 권장.
 - 다음 의심 지점: T=100~200 진짜 한계가 어디인지 재측정 + Round 2(JwtFilter DB hit 제거)로 DB SELECT 감소 효과 분리해서 측정.
+
+---
+
+# k6 재측정 라운드 (2026-07-29)
+
+> JMeter(ARM 에뮬레이션)는 T≥500에서 **클라이언트가 먼저 포화**해 백엔드 한계 측정 불가였다.
+> k6 native(arm64) + `scripts/k6-load.sh`로 교체. 클라이언트 병목 제거 → 백엔드 진짜 한계 관측.
+> 측정 표준(모든 라운드 공통): **ramp 20s + duration 90s, VU 레벨 50/100/200/500/1000**, 시나리오 동일(POST 70% / GET 30%).
+
+## Round 0 — k6 Baseline (2026-07-29)
+
+원본 코드(인프라 튜닝 Round 1 적용 상태) 기준.
+
+```
+   VUS   samples     TPS    avg    p50    p95     p99   err%
+  ───────────────────────────────────────────────────────────
+    50    26,178   237.6    191    169    444     665   0.0
+   100    22,736   206.0    440    419    844   1,182   0.0   ← TPS 이미 꺾임
+   200    16,642   149.5   1209    993   2946   5,640   0.0
+   500    10,341    91.3   4927   4846   9406  11,803   0.0
+  1000    18,449   160.4   5531   5809   7886   8,696   0.0
+```
+
+docker stats (mid-run):
+
+| VUS | nf-app CPU | **nf-mysql CPU** | 진단 |
+|---|---|---|---|
+| 50   | 175% | **267%** | DB가 이미 백엔드보다 바쁨 |
+| 100  | 122% | **490%** | MySQL ~5코어 포화, TPS 오히려 감소 |
+| 200  | 142% | 246% | p95 3s 붕괴 |
+| 500  | 163% | 383% | — |
+| 1000 | 117% | **550%** | MySQL 지속 포화, nf-app은 여유 |
+
+### 핵심 진단
+
+- **MySQL이 진짜 병목.** VUS=50에서 이미 MySQL 267%인데 nf-app은 175%로 여유. VUS=100에서 MySQL 490% → TPS가 237→206으로 **역전**.
+- 원인: `POST /messages` 한 건당 **SELECT 3 + INSERT 1** (JwtFilter의 loadUserByUsername 1 + sendMessage의 sender/receiver 조회 2 + save 1).
+- 개선 타깃 순서가 명확해짐: **R2(JwtFilter SELECT 1 제거) → R3(sender/receiver SELECT 2 제거)** 가 정확히 이 DB 부하를 겨냥.
+- 이 baseline이 이후 모든 라운드의 비교 기준.
