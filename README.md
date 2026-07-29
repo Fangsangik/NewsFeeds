@@ -9,14 +9,64 @@
 
 ## 🛠️ 기술 스택
 
-- **Backend**: Java, Spring Boot, JPA, Spring Session
-- **Database**: MySQL, Redis
-- **Authentication**: JWT + Session, Kakao OAuth2
-- **Real-time**: WebSocket, Redis Pub/Sub
-- **Security**: Interceptor, Password Encoding
+- **Backend**: Java 17, Spring Boot 3.4, Spring Security, JPA/Hibernate
+- **Database**: MySQL 8, Redis 7
+- **Authentication**: JWT (MVP2에서 claims 기반 stateless 인증으로 최적화), Kakao OAuth2
+- **Real-time**: STOMP over WebSocket (JWT 핸드셰이크 인증)
+- **Frontend**: 바닐라 JS SPA (해시 라우터, 무한 스크롤)
+- **Infra**: Docker Compose (app/MySQL/Redis/InfluxDB/Grafana)
+- **Load Testing / Observability**: k6 native, Micrometer → InfluxDB → Grafana
 
 ## 🥅 개발 기간
-**2024/12/16 ~ 2024/12/31**
+- **초기 팀 프로젝트**: 2024/12/16 ~ 2024/12/31
+- **MVP2 개인 확장**(프런트 SPA · Docker화 · 성능 최적화): 2026/06 ~
+
+> **MVP2에서 추가된 것**: 바닐라 JS SPA 프런트엔드, Docker Compose 전체 스택(app/MySQL/Redis/InfluxDB/Grafana),
+> k6 기반 부하테스트 + Grafana 모니터링, 그리고 **DM hot path 성능 최적화 케이스 스터디**(아래).
+
+---
+
+## 🚀 실행 방법 (Docker Compose)
+
+```bash
+# 1. 전체 스택 기동 (app 8080, MySQL 3307, Redis 6380, InfluxDB 8086, Grafana 3000)
+docker compose up -d --build
+
+# 2. 헬스체크
+docker compose ps
+curl -s -o /dev/null -w "GET / -> %{http_code}\n" http://localhost:8080/
+
+# 3. 브라우저에서 SPA 접속
+open http://localhost:8080/
+
+# 4. API 회귀 테스트 (47→52 케이스)
+./scripts/e2e.sh
+
+# 5. 부하 테스트 (k6 native 필요: brew install k6)
+DUR_S=90 RAMP_S=20 ./scripts/k6-load.sh baseline
+```
+
+- Grafana 대시보드: http://localhost:3000 (백엔드 Micrometer + k6 메트릭)
+- 카카오 키 등 시크릿은 호스트 `.env`에서 주입 (`.env`는 커밋 제외)
+
+---
+
+## 📊 성능 최적화 케이스 스터디 (하이라이트)
+
+DM 전송 hot path를 k6로 프로파일링해 **DB read-bound → write-bound로 병목을 이동**시키고,
+요청당 DB SELECT를 **3 → 0**으로 줄였다.
+
+| 라운드 | 변경 | 요청당 SELECT | 핵심 결과 |
+|---|---|---|---|
+| Baseline | 인프라 튜닝만 | 3 | MySQL 병목 (VUS=50 MySQL CPU **267%**) |
+| **R2** | JwtFilter DB 조회 제거 (JWT claims 인증) | 3→2 | VUS=50 MySQL **267→167%** (-37%) |
+| **R3** | 메시지 sender/receiver 조회 제거 (getReferenceById) | 2→**0** | nf-app CPU **급감**(VUS=500 163→71%), 중부하 TPS **+72%** |
+| **R4** | 대화/안읽음 복합 인덱스 | — | 선택적 대화 filesort 제거 (EXPLAIN) |
+
+측정 도구를 JMeter(ARM 에뮬레이션 한계)에서 **k6 native**로 교체해 클라이언트 병목을 제거했고,
+하네스의 데이터 분포 결함·라운드 간 교란변수까지 정직하게 문서화했다.
+
+📄 **상세**: [loadtest/PERFORMANCE.md](./loadtest/PERFORMANCE.md)
 
 ## 👨‍💻 ERD
 *ERD 다이어그램 추가 예정*
