@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface LikeRepository extends JpaRepository<Like, Long> {
 
 
-    @Query("select sum(l.likeCount) from Like l where l.feed.id = :feedId")
+    @Query("select coalesce(sum(l.likeCount), 0L) from Like l where l.feed.id = :feedId")
     Long countByFeedId(@Param("feedId") Long feedId);
 
     @Query("SELECT l FROM Like l WHERE l.feed.id = :feedId")
