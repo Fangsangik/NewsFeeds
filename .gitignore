@@ -1,6 +1,7 @@
 HELP.md
 .gradle
 build/
+uploads/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -36,3 +37,11 @@ out/
 ### VS Code ###
 .vscode/
 .env
+logs/
+loadtest/results/
+
+# OMC orchestration state
+.omc/
+
+# JMeter generated HTML report (bower_components 수백 파일) — 요약은 PERFORMANCE.md에 텍스트로 보존
+loadtest/results/report/
