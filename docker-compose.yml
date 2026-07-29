@@ -1,0 +1,138 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: nf-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "1234"
+      MYSQL_DATABASE: newsfeed
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p1234"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - nf-mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: nf-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    container_name: nf-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_APPLICATION_NAME: newsfeed_project
+      SPRING_JWT_SECRET: make_sure_to_keep_this_secret_key_not_exposed_to_public
+      SPRING_SESSION_STORE_TYPE: jdbc
+
+      SPRING_LOGGING_LEVEL_ROOT: INFO
+      SPRING_LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: INFO
+      SPRING_LOGGING_LEVEL_ORG_HIBERNATE: INFO
+
+      LOGGING_FILE_NAME: /app/logs/app.log
+      LOGGING_LEVEL_COM_EXAMPLE_NEWSFEED: DEBUG
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/newsfeed?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "1234"
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: "6379"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_USE_SQL_COMMENTS: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_BATCH_FETCH_SIZE: "1000"
+      SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_SQL: WARN
+      SPRING_JPA_LOGGING_LEVEL_ORG_HIBERNATE_TYPE_DESCRIPTOR_SQL_BASICBINDER: WARN
+
+      SERVER_TOMCAT_URI_ENCODING: UTF-8
+      SERVER_SERVLET_ENCODING_CHARSET: UTF-8
+      SERVER_SERVLET_ENCODING_ENABLED: "true"
+      SERVER_SERVLET_ENCODING_FORCE: "true"
+      SERVER_SERVLET_SESSION_TIMEOUT: 30m
+      SERVER_MVC_CHARSET: UTF-8
+      SERVER_MVC_LOCALE: ko_KR
+      SERVER_MVC_MESSAGES_ENCODING: UTF-8
+
+      # ---- Round 1 tuning (infra only, no code change) ----
+      JAVA_TOOL_OPTIONS: "-Xms1g -Xmx2g -XX:+UseG1GC"
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "50"
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: "10"
+      SERVER_TOMCAT_THREADS_MAX: "400"
+      SERVER_TOMCAT_ACCEPT_COUNT: "200"
+
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
+      MANAGEMENT_INFLUX_METRICS_EXPORT_ENABLED: "true"
+      MANAGEMENT_INFLUX_METRICS_EXPORT_URI: "http://influxdb:8086"
+      MANAGEMENT_INFLUX_METRICS_EXPORT_DB: "springboot"
+      MANAGEMENT_INFLUX_METRICS_EXPORT_AUTO_CREATE_DB: "true"
+      MANAGEMENT_INFLUX_METRICS_EXPORT_STEP: "10s"
+      MANAGEMENT_METRICS_TAGS_APPLICATION: "newsfeed"
+
+      KAKAO_CLIENT_ID: "${KAKAO_CLIENT_ID:-dummy}"
+      KAKAO_REDIRECT_URI: "${KAKAO_REDIRECT_URI:-http://localhost:8080/callback}"
+      KAKAO_CLIENT_SECRET: "${KAKAO_CLIENT_SECRET:-dummy}"
+      KAKAO_TOKEN_URI: "${KAKAO_TOKEN_URI:-https://kauth.kakao.com/oauth/token}"
+      KAKAO_USER_INFO_URI: "${KAKAO_USER_INFO_URI:-https://kapi.kakao.com/v2/user/me}"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+
+  influxdb:
+    image: influxdb:1.8
+    container_name: nf-influxdb
+    restart: unless-stopped
+    environment:
+      INFLUXDB_DB: jmeter
+      INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    ports:
+      - "8086:8086"
+    volumes:
+      - nf-influxdb-data:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: nf-grafana
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    ports:
+      - "3000:3000"
+    volumes:
+      - nf-grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+
+volumes:
+  nf-mysql-data:
+  nf-influxdb-data:
+  nf-grafana-data:
