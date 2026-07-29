@@ -8,13 +8,12 @@ export async function renderDetail(root, feedId) {
     el("span", { class: "spinner" }),
   ]));
 
-  let feed, author, likeData, comments;
+  let feed, likeData, comments;
   try {
-    // The like-count endpoint is the only one that reliably exposes the count
-    // without an authoritative GET-feed-by-id total; we just fetch in parallel.
-    [feed, author, likeData, comments] = await Promise.all([
+    // 피드 응답(FeedResponseDto)에 author가 포함되므로 작성자 정보를 위한
+    // 별도 /members/{feedId}/member 호출이 필요 없다. 나머지만 병렬로 가져온다.
+    [feed, likeData, comments] = await Promise.all([
       api.get(`/feeds/${feedId}`, { auth: false }),
-      api.get(`/members/${feedId}/member`, { auth: false }).catch(() => null),
       api.get(`/likes/${feedId}`, { auth: false }).catch(() => ({ likeCount: 0 })),
       api.get(`/comments/feed/${feedId}`, { auth: false }).catch(() => []),
     ]);
@@ -25,11 +24,12 @@ export async function renderDetail(root, feedId) {
   }
 
   root.innerHTML = "";
-  root.appendChild(buildView(feedId, feed, author, likeData, comments));
+  root.appendChild(buildView(feedId, feed, likeData, comments));
 }
 
-function buildView(feedId, feed, author, likeData, comments) {
-  const authorName = author?.email?.split("@")[0] || `user${author?.id ?? ""}`;
+function buildView(feedId, feed, likeData, comments) {
+  const author = feed?.author;
+  const authorName = author?.name || author?.email?.split("@")[0] || `user${author?.id ?? ""}`;
   const liked = likes.has(feedId);
 
   const likeCountEl = el("div", { class: "like-count" }, `좋아요 ${likeData?.likeCount ?? 0}개`);
