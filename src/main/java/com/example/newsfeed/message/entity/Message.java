@@ -1,6 +1,6 @@
 package com.example.newsfeed.message.entity;
 
-import com.example.newsfeed.constants.BaseTimeEntity;
+import com.example.newsfeed.constants.entity.BaseTimeEntity;
 import com.example.newsfeed.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Builder;

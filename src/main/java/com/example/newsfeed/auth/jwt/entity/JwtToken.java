@@ -14,7 +14,10 @@ public class JwtToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(length = 1024)
     private String accessToken;
+
+    @Column(length = 1024)
     private String refreshToken;
 
     private Date issuedAt;

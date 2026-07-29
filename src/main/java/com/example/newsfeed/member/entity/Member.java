@@ -53,7 +53,7 @@ public class Member extends BaseEntity {
     @JoinColumn(name = "kakao_member_id")
     private KakaoMember kakaoMember;
 
-    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
     private List<Message> messages = new ArrayList<>();
 
 
