@@ -79,6 +79,18 @@ public class Member extends BaseEntity {
         this.id = memberId;
     }
 
+    /**
+     * JWT claims만으로 구성한 경량 인증 주체(principal).
+     * 매 요청 DB 조회 없이 id/email/role만 채운다. 나머지 필드가 필요한 서비스는
+     * memberId로 재조회하는 기존 패턴을 그대로 사용한다.
+     */
+    public static Member fromClaims(Long id, String email, Role role) {
+        Member m = new Member(id);
+        m.email = email;
+        m.role = role;
+        return m;
+    }
+
     public void markAsDeleted() {
         this.deletedAt = LocalDateTime.now();
     }

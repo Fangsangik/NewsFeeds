@@ -193,3 +193,38 @@ docker stats (mid-run):
 - 원인: `POST /messages` 한 건당 **SELECT 3 + INSERT 1** (JwtFilter의 loadUserByUsername 1 + sendMessage의 sender/receiver 조회 2 + save 1).
 - 개선 타깃 순서가 명확해짐: **R2(JwtFilter SELECT 1 제거) → R3(sender/receiver SELECT 2 제거)** 가 정확히 이 DB 부하를 겨냥.
 - 이 baseline이 이후 모든 라운드의 비교 기준.
+
+## Round 2 — JwtFilter DB 조회 제거 (JWT claims 인증) (2026-07-29)
+
+변경: `JwtFilter`가 매 요청 `userDetailsService.loadUserByUsername()`(member SELECT 1)를 호출하던 것을
+제거하고, 서명 검증된 토큰의 claims(id/email/role)만으로 `Member.fromClaims()` 경량 principal을 구성.
+→ 요청당 SELECT 3 → **2** (POST /messages 기준).
+
+```
+   VUS   samples     TPS    p50    p95     p99   err%   (vs baseline)
+  ─────────────────────────────────────────────────────────────────
+    50    24,379   221.3    182    432     635   0.0    MySQL 267→167%
+   100    19,248   174.1    503   1022   1,280   0.0
+   200    16,877   151.9   1192   2189   2,583   0.0    p95 2946→2189 개선
+   500    15,580   137.5   3327   5730   6,649   0.0    TPS 91→137
+  1000    13,957   121.3   7112  13575  16,113   0.0
+```
+
+docker stats mid-run — **nf-mysql CPU (baseline → R2)**:
+
+| VUS | baseline | R2 | nf-app (base→R2) |
+|---|---|---|---|
+| 50   | 267% | **167%** (-37%) | 175→158% |
+| 100  | 490% | 356% | 122→135% |
+| 200  | 246% | 499% | 142→116% |
+| 500  | 383% | 529% | 163→98% |
+| 1000 | 550% | 401% | 117→85% |
+
+결론(정직하게):
+- **가장 깨끗한 비포화 구간 VUS=50에서 신호가 명확**: MySQL CPU 267→167% (-37%), nf-app 175→158%.
+  SELECT 3개 중 1개(≈33%)를 제거 → MySQL CPU ≈37% 감소. **기전과 수치가 일치**.
+- nf-app CPU도 전 구간에서 하락(인증 경로에서 DB 왕복 + 영속성 컨텍스트 부담 제거).
+- 포화 구간(VUS≥100)의 TPS/p95는 런-투-런 변동이 커서 단일 측정으로 단정 불가 — 시스템이 여전히
+  **DB-bound**이기 때문. 남은 큰 SELECT 2개를 제거하는 R3에서 end-to-end 효과가 드러날 것으로 예상.
+- 트레이드오프: claims 인증은 토큰 폐기(로그아웃)를 DB로 즉시 강제하지 못함. access token 만료 1시간이
+  이를 제한. 즉시 무효화가 필요하면 R6에서 Redis 블랙리스트 병행 고려.
