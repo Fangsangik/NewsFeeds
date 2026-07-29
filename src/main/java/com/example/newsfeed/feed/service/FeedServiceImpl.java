@@ -98,7 +98,7 @@ public class FeedServiceImpl implements FeedService {
     @Transactional
     @Override
     public FeedUpdateResponseDto updateFeed(Member member, Long feedId, FeedRequestDto feedRequestDto) {
-        if (memberRepository.existsById(member.getId())) {
+        if (!memberRepository.existsById(member.getId())) {
             throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
         }
 
@@ -111,7 +111,7 @@ public class FeedServiceImpl implements FeedService {
     @Transactional
     @Override
     public void deleteFeed(Member member, Long feedId) {
-        if (memberRepository.existsById(member.getId())) {
+        if (!memberRepository.existsById(member.getId())) {
             throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
         }
 
