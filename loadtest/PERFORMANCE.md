@@ -3,6 +3,49 @@
 > DM 송수신 hot path 기준 부하 테스트 결과 + 시스템 메트릭 + 다음 개선 단계.
 > 측정값을 비교 가능한 baseline으로 남겨두고, 개선 작업은 한 항목씩 적용 → 재측정 → 차이 비교한다.
 
+---
+
+## 📊 케이스 스터디 요약 (Executive Summary)
+
+**한 줄:** DM 전송 hot path를 부하테스트로 프로파일링해 **DB read-bound → write-bound로 병목을 이동**시키고,
+요청당 DB SELECT를 **3 → 0**으로 줄여 앱 CPU를 고부하에서 절반 이하로 낮췄다.
+
+### 문제 (Problem)
+`POST /messages` 한 건당 백엔드가 **SELECT 3 + INSERT 1**을 수행 (JwtFilter 인증 조회 1 + sender/receiver 조회 2 + save 1).
+k6 native 부하(단일 토큰, POST 70% / GET 30%)로 측정하니 **MySQL이 병목**: VUS=50에서 이미 MySQL CPU 267%
+(nf-app 175%), VUS=100에서 MySQL 490% → TPS가 237→206으로 **역전**(부하를 올릴수록 처리량 감소).
+
+### 가설 (Hypothesis)
+요청당 DB 왕복이 병목의 원인 → **읽기(SELECT)를 제거하면 DB·앱 부하가 함께 내려간다.** 한 번에 한 변경만
+적용하고 동일 하네스(ramp 20s + 90s × VU 50/100/200/500/1000)로 재측정해 효과를 분리한다.
+
+### 실험 & 결과 (Experiments)
+
+| 라운드 | 변경 | 요청당 SELECT | 핵심 결과 |
+|---|---|---|---|
+| **Baseline** | (인프라 튜닝만) | 3 | MySQL 병목. VUS=50 MySQL **267%**, 피크 TPS 237 후 degrade |
+| **R2** | JwtFilter DB 조회 제거 (JWT claims 인증) | 3→**2** | VUS=50 MySQL **267→167%** (-37%), nf-app 175→158% |
+| **R3** | 메시지 전송 sender/receiver 조회 제거 (getReferenceById) | 2→**0** | nf-app CPU **급감**(VUS=500 163→**71%**), 병목이 순수 INSERT로 이동, 중부하 TPS **91→157 (+72%)** |
+| **R4** | 대화/안읽음 복합 인덱스 (스키마) | — | 선택적 대화에서 idx 사용 + filesort 제거(EXPLAIN). *하네스 단일쌍 한계로 부하 재현 불가* |
+
+### 결론 (Conclusion)
+- **병목을 이동시켰다**: DB read-bound(SELECT 3) → 순수 write-bound(INSERT 1). 앱은 이제 요청당 거의
+  INSERT 1건만 조율하고, 고부하에서 nf-app CPU가 **절반 이하**로 내려감.
+- **DB read 부하 감소를 정량 확인**: 비포화 구간(VUS=50)에서 SELECT 1개 제거 → MySQL CPU 37% 감소로
+  기전과 수치가 일치.
+- **정직한 한계 인식**: 남은 병목은 write 자체 → 이를 넘으려면 배치/큐/샤딩 등 아키텍처 레벨 개입 필요.
+  측정 하네스의 데이터 분포 결함과 라운드 간 테이블 성장 교란도 문서화(아래 "측정 방법론 한계").
+
+### 향후 개선 (Further Work) — 설계했으나 이번 하네스로는 측정 부적합
+- **R5 `@Async` 푸시 분리**: `convertAndSendToUser`를 응답 경로에서 제외해 POST 지연 감소. 단, 현 푸시는 이미
+  in-memory·fire-and-forget이고 경로가 INSERT-bound라 효과가 작을 것으로 예상 → 측정하려면 push 비용이
+  큰 브로커(외부 STOMP relay) 전제 필요.
+- **R6 Redis hot-read 캐시**: `getLikeCount` 등은 **DM이 아닌 별도 hot path** → like 중심 시나리오 필요.
+  R2의 claims 인증 트레이드오프(즉시 토큰 폐기 불가)를 Redis 블랙리스트로 보완하는 것도 이 라운드 후보.
+- **측정 정밀화**: multi-쌍 하네스 + 라운드마다 `TRUNCATE message` + 반복 측정 중앙값.
+
+---
+
 ## 환경
 
 - 호스트: Apple Silicon (linux/arm64/v8)
