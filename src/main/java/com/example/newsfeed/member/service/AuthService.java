@@ -46,11 +46,8 @@ public class AuthService {
             throw new InvalidInputException(ErrorCode.WRONG_PASSWORD);
         }
 
-        if (tokenRepository.existsByMemberEmailNot(requestDto.getEmail())) {
-            throw new InvalidInputException(ErrorCode.ALREADY_LOGIN);
-        }
-
-        // 기존 토큰 삭제
+        // 본인의 기존 토큰만 정리(= 새 디바이스 로그인 시 기존 토큰 무효화).
+        // 다른 사용자가 보유한 토큰은 영향 없음.
         tokenRepository.deleteByMember(member);
 
         // JwtMemberDto 생성

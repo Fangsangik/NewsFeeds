@@ -1,7 +1,7 @@
 package com.example.newsfeed.like.controller;
 
 import com.example.newsfeed.auth.jwt.service.UserDetailsImpl;
-import com.example.newsfeed.auth.util.AuthenticatedMemberUtil;
+import com.example.newsfeed.util.AuthenticatedMemberUtil;
 import com.example.newsfeed.constants.response.CommonResponse;
 import com.example.newsfeed.like.dto.LikeResponseDto;
 import com.example.newsfeed.like.service.LikeService;

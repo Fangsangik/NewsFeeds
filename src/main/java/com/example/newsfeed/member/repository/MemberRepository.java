@@ -4,6 +4,8 @@ import com.example.newsfeed.exception.ErrorCode;
 import com.example.newsfeed.exception.NotFoundException;
 import com.example.newsfeed.kakao.entity.KakaoMember;
 import com.example.newsfeed.member.entity.Member;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -26,6 +28,11 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findMemberByFeedId(@Param("feedId") Long feedId);
 
     Optional<Member> findByKakaoMember(KakaoMember kakaoMember);
+
+    @Query("SELECT m FROM Member m WHERE m.deletedAt IS NULL AND " +
+           "(LOWER(m.name) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           " LOWER(m.email) LIKE LOWER(CONCAT('%', :q, '%')))")
+    Page<Member> searchByQuery(@Param("q") String q, Pageable pageable);
 
     default Member findByIdOrElseThrow(Long id) {
         return findByIdAndNotDeleted(id).orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
