@@ -265,3 +265,38 @@ docker stats mid-run — **nf-app CPU 급감, MySQL CPU 상승**:
   (c) hot read를 캐시로 DB에서 덜어내기(R6). 쓰기 자체의 한계를 넘으려면 배치/샤딩/큐가 필요.
 - 주의(정직): getReferenceById는 존재하지 않는 receiverId를 INSERT 시 FK 제약(500)으로 걸러
   기존의 404(NotFound)와 에러 시맨틱이 달라짐. 인증 주체인 sender는 항상 유효.
+
+## Round 4 — Message 복합 인덱스 (스키마 개선) (2026-07-29)
+
+변경: `Message` 엔티티에 `@Table(indexes=...)` 선언(fresh DB 자동 생성) + 현재 DB에 명시 `ALTER`.
+- `idx_msg_conv (sender_id, receiver_id, created_at)` / `idx_msg_conv_rev (receiver_id, sender_id, created_at)`
+  — 대화 조회의 양방향 OR 각각 커버 + created_at 정렬을 인덱스로 흡수(filesort 제거)
+- `idx_msg_unread (receiver_id, read_status)` — 안 읽은 메시지 조회
+
+**k6 부하 시나리오로는 효과 측정 불가 — 하네스의 데이터 분포 결함 때문.** 정직하게 기록한다:
+
+- k6가 **단일 토큰·단일 쌍**으로 모든 메시지를 한 방향으로 쏟아, 지배적 대화가 테이블의 대부분
+  (측정 시점 28만 행 중 대부분)을 차지 → `sender_id=X` 조건의 **선택도가 거의 0**.
+  ```
+  -- 지배 쌍(하네스 결함): 옵티마이저가 풀스캔 선택
+  EXPLAIN ... WHERE (sender=126 AND receiver=127) OR (sender=127 AND receiver=126) ORDER BY created_at LIMIT 50
+  → type: ALL   key: NULL   rows: 284357   Extra: Using where; Using filesort
+  ```
+- 반면 **현실적(선택적) 대화**에서는 인덱스가 정확히 동작:
+  ```
+  -- 선택적 쌍(현실 분포): 인덱스 사용 + filesort 제거
+  EXPLAIN ... WHERE sender_id=35 AND receiver_id=36 ORDER BY created_at LIMIT 20
+  → type: ref   key: idx_msg_conv   rows: 1   Extra: NULL
+  ```
+- 결론: 인덱스는 **프로덕션(다수 유저 × 중간 크기 대화)에서 GET conversation의 filesort를 제거**하는
+  올바른 개선이다. 다만 현재 부하 하네스는 단일 쌍이라 이 이득을 재현하지 못한다.
+  숫자를 지어내는 대신 **하네스의 한계를 드러내는 것**이 정직한 엔지니어링.
+
+## ⚠️ 측정 방법론 한계 (정직한 기록)
+
+1. **라운드 간 테이블 성장(confound)**: baseline~R3가 같은 DB에 누적돼 message 행이 라운드마다 증가.
+   라운드 간 **MySQL CPU 절대 비교**에는 테이블 크기 효과가 섞여 있음. 견고한 신호는
+   (a) R2의 VUS=50 MySQL 267→167%, (b) R2/R3의 **nf-app CPU 감소**(동일 요청당 작업량 감소는 테이블
+   크기와 무관) 쪽. 다음 개선: 라운드마다 `TRUNCATE message` 로 DB 크기 고정.
+2. **단일 쌍 시나리오**: 위 R4 참조. 읽기 인덱스/캐시 효과 측정에는 multi-쌍 하네스 필요.
+3. **단일 측정**: 각 셀 1회 측정이라 포화 구간 변동이 큼. 반복 측정 + 중앙값 권장.
