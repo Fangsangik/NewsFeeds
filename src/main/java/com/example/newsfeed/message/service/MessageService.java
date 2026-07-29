@@ -34,10 +34,11 @@ public class MessageService {
 
     @Transactional
     public MessageResponseDto sendMessage(Long senderId, Long receiverId, String content) {
-        Member sender = memberRepository.findById(senderId)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
-        Member receiver = memberRepository.findById(receiverId)
-                .orElseThrow(() -> new NotFoundException(NOT_FOUND_MEMBER));
+        // 메시지 저장에는 sender/receiver의 FK(id)만 있으면 된다. getReferenceById는 실제
+        // SELECT 없이 프록시만 반환하므로 메시지당 member SELECT 2건을 제거한다.
+        // (senderId는 인증 주체라 항상 유효. 존재하지 않는 receiverId는 INSERT 시 FK 제약으로 걸린다.)
+        Member sender = memberRepository.getReferenceById(senderId);
+        Member receiver = memberRepository.getReferenceById(receiverId);
 
         Message saved = messageRepository.save(new Message(content, receiver, sender, false));
         MessageResponseDto dto = MessageResponseDto.from(saved);

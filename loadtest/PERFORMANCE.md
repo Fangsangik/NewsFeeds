@@ -228,3 +228,40 @@ docker stats mid-run — **nf-mysql CPU (baseline → R2)**:
   **DB-bound**이기 때문. 남은 큰 SELECT 2개를 제거하는 R3에서 end-to-end 효과가 드러날 것으로 예상.
 - 트레이드오프: claims 인증은 토큰 폐기(로그아웃)를 DB로 즉시 강제하지 못함. access token 만료 1시간이
   이를 제한. 즉시 무효화가 필요하면 R6에서 Redis 블랙리스트 병행 고려.
+
+## Round 3 — 메시지 전송 SELECT 2 제거 (getReferenceById) (2026-07-29)
+
+변경: `MessageService.sendMessage`가 `memberRepository.findById(senderId/receiverId)`로 sender/receiver
+엔티티를 **로딩**하던 것을 `getReferenceById`(프록시만, SELECT 0)로 교체. Message 저장엔 FK(id)만
+필요하고 `MessageResponseDto.from`은 프록시의 `getId()`만 접근(초기화 미유발). 요청당 SELECT 2 → **0**.
+
+```
+   VUS   samples     TPS    p50    p95     p99   err%   (vs baseline)
+  ─────────────────────────────────────────────────────────────────
+    50    26,111   236.6    173    388     525   0.0
+   100    17,941   162.0    412   1632   2,110   0.0
+   200    16,229   146.0   1061   2736   3,688   0.0
+   500    17,773   157.0   2832   5071   6,353   0.0    TPS 91→157 (+72%)
+  1000    16,537   143.8   6553   8679   9,857   0.0    p99 8696→9857
+```
+
+docker stats mid-run — **nf-app CPU 급감, MySQL CPU 상승**:
+
+| VUS | nf-app (base→R3) | nf-mysql (base→R3) |
+|---|---|---|
+| 50   | 175 → **123%** | 267 → 309% |
+| 100  | 122 → **80%**  | 490 → 663% |
+| 200  | 142 → **81%**  | 246 → 634% |
+| 500  | 163 → **71%**  | 383 → 693% |
+| 1000 | 117 → **78%**  | 550 → 731% |
+
+결론 — **병목이 이동했다**:
+- **nf-app CPU가 전 구간에서 크게 하락**(VUS=500 기준 163→71%). sender/receiver 엔티티 하이드레이션 +
+  영속성 컨텍스트 관리가 사라진 직접 효과. 앱은 이제 요청당 거의 INSERT 1건만 조율.
+- app이 가벼워지자 **더 많은 요청이 DB에 도달** → 중부하 TPS 상승(VUS=500 91→157, +72%) →
+  INSERT 처리량 증가 → **MySQL CPU가 오히려 상승**. 낮아진 게 아니라 "더 많이 일하게 됐다".
+- 시스템이 **순수 write(INSERT)-bound**로 전환. 이 hot path의 환원 불가능한 코어가 드러남.
+- 함의: 남은 개선은 (a) GET 30% 경로를 인덱스로 가볍게(R4), (b) 응답에서 부수작업 분리(R5),
+  (c) hot read를 캐시로 DB에서 덜어내기(R6). 쓰기 자체의 한계를 넘으려면 배치/샤딩/큐가 필요.
+- 주의(정직): getReferenceById는 존재하지 않는 receiverId를 INSERT 시 FK 제약(500)으로 걸러
+  기존의 404(NotFound)와 에러 시맨틱이 달라짐. 인증 주체인 sender는 항상 유효.
