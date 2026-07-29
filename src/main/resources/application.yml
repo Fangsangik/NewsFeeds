@@ -1,6 +1,6 @@
 spring:
   config:
-    import: file:.env[.properties]
+    import: optional:file:.env[.properties]
   application:
     name: ${SPRING_APPLICATION_NAME}
   jwt:
@@ -26,6 +26,12 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME}
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 12MB
 
   jpa:
     database-platform: ${SPRING_JPA_DATABASE_PLATFORM}

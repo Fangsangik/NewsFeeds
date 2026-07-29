@@ -19,4 +19,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("SELECT new com.example.newsfeed.message.dto.MessageRequestDto(m.sender.id, m.receiver.id, m.message)" +
             " FROM Message m WHERE m.receiver.id = :memberId")
     Page<MessageRequestDto> findAllByReceiverId(Long memberId, Pageable pageable);
+
+    @Query("SELECT m FROM Message m " +
+            "WHERE (m.sender.id = :me AND m.receiver.id = :peer) " +
+            "   OR (m.sender.id = :peer AND m.receiver.id = :me) " +
+            "ORDER BY m.createdAt ASC")
+    Page<Message> findConversation(Long me, Long peer, Pageable pageable);
 }
