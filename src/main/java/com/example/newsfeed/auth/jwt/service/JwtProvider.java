@@ -117,4 +117,8 @@ public class JwtProvider {
                 .parseClaimsJws(token)
                 .getBody();
     }
+
+    public Date getExpiration(String token) {
+        return getClaims(token).getExpiration();
+    }
 }

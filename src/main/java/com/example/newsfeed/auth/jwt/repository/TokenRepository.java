@@ -12,4 +12,10 @@ public interface TokenRepository extends JpaRepository<JwtToken, Long> {
     Optional<JwtToken> findByMemberEmail(String email);
 
     boolean existsByMemberEmailNot(String email);
+
+    Optional<JwtToken> findByRefreshToken(String refreshToken);
+
+    void deleteByMember(Member member);
+
+    void deleteByAccessToken(String accessToken);
 }

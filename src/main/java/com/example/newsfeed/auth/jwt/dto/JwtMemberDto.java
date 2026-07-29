@@ -1,6 +1,6 @@
 package com.example.newsfeed.auth.jwt.dto;
 
-import com.example.newsfeed.auth.type.LoginType;
+import com.example.newsfeed.member.type.LoginType;
 import com.example.newsfeed.member.type.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
