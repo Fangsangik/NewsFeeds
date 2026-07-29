@@ -68,6 +68,20 @@ DM 전송 hot path를 k6로 프로파일링해 **DB read-bound → write-bound�
 
 📄 **상세**: [loadtest/PERFORMANCE.md](./loadtest/PERFORMANCE.md)
 
+---
+
+## 🗓️ 진행 현황 (2026-07-29 세션)
+
+**완료**
+- 6주치 미커밋 작업을 논리 단위 10개 커밋으로 정리 + `.gitignore` 정비(시크릿/산출물 제외)
+- 버그 fix: 좋아요 0개 피드 조회 NPE(500→200), 피드 상세 응답에 `author`/`feedId` 포함(프런트 중복 호출 제거)
+- 측정 하네스를 JMeter → **k6 native**로 재구축 (`scripts/k6-load.sh`, `loadtest/k6/dm.js`)
+- 성능 라운드 측정·문서화: **Baseline / R2(claims 인증) / R3(getReferenceById) / R4(인덱스)**
+- 케이스 스터디 종합 + 측정 방법론 한계까지 정직하게 기록
+- README·문서 정리, `docker compose up` 재현성 + e2e 52/52 확인
+
+**남은 일**: [TODO.md](./TODO.md) 참고 (데모 영상, multi-쌍 하네스, R5/R6, 제품 화면 확장 등)
+
 ## 👨‍💻 ERD
 *ERD 다이어그램 추가 예정*
 
