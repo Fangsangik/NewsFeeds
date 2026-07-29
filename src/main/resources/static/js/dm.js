@@ -1,0 +1,232 @@
+import { api } from "./api.js";
+import { auth } from "./store.js";
+import { el, avatar, toast, fmtTimeAgo, escapeHtml } from "./ui.js";
+
+// ---------- shared STOMP client (one per browser tab) ----------
+let stompClient = null;
+const incomingHandlers = new Set();
+
+export function connectStomp() {
+  if (!auth.isLoggedIn) return;
+  if (stompClient && stompClient.active) return;
+  if (typeof StompJs === "undefined") {
+    console.warn("StompJs lib not loaded");
+    return;
+  }
+
+  // Raw WebSocket URL so the ?token=... query param survives the upgrade.
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  const wsUrl = `${wsProto}://${location.host}/ws?token=${encodeURIComponent(auth.accessToken)}`;
+
+  stompClient = new StompJs.Client({
+    brokerURL: wsUrl,
+    reconnectDelay: 5000,
+    debug: () => {},
+  });
+
+  stompClient.onConnect = () => {
+    stompClient.subscribe("/user/queue/messages", (frame) => {
+      try {
+        const payload = JSON.parse(frame.body);
+        incomingHandlers.forEach(h => { try { h(payload); } catch {} });
+      } catch (e) {
+        console.warn("bad STOMP frame", e);
+      }
+    });
+  };
+  stompClient.onStompError = (frame) => console.warn("STOMP error", frame.headers?.message);
+  stompClient.activate();
+}
+
+export function disconnectStomp() {
+  if (stompClient) { stompClient.deactivate(); stompClient = null; }
+  incomingHandlers.clear();
+}
+
+function onIncoming(handler) {
+  incomingHandlers.add(handler);
+  return () => incomingHandlers.delete(handler);
+}
+
+// ---------- views ----------
+export async function renderDm(root, peerId) {
+  if (!auth.isLoggedIn) { location.hash = "#/login"; return; }
+  if (peerId) return renderConversation(root, Number(peerId));
+  return renderInbox(root);
+}
+
+async function renderInbox(root) {
+  root.innerHTML = "";
+  root.appendChild(el("div", { class: "center muted", style: { padding: "40px" } }, [
+    el("span", { class: "spinner" }),
+  ]));
+
+  // Failures fall through to the empty state — DM inbox shouldn't bail with
+  // a scary error just because /friends returned 401/5xx; treat unknown
+  // results the same as "no friends yet".
+  let friends = [];
+  let loadError = null;
+  try {
+    const page = await api.get("/friends?page=0&size=50");
+    friends = Array.isArray(page) ? page : (page?.content ?? []);
+  } catch (e) {
+    console.warn("[dm] /friends failed:", e);
+    loadError = e;
+  }
+
+  root.innerHTML = "";
+  const header = el("div", { class: "dm-header" }, [
+    el("h2", {}, "메시지"),
+    el("div", { class: "muted" }, friends.length
+      ? "대화할 친구를 선택하세요"
+      : "아직 대화할 친구가 없어요"),
+  ]);
+  const list = el("div", { class: "dm-list" });
+
+  if (friends.length) {
+    friends.forEach(f => {
+      const peer = pickPeer(f);
+      if (!peer.id) return;
+      const row = el("button", { class: "dm-list-row", onclick: () => { location.hash = `#/dm/${peer.id}`; } }, [
+        avatar(peer.name || `user${peer.id}`),
+        el("div", { class: "dm-list-meta" }, [
+          el("div", { class: "name" }, peer.name || `user${peer.id}`),
+          el("div", { class: "sub muted" }, "대화 시작하기"),
+        ]),
+      ]);
+      list.appendChild(row);
+    });
+  } else {
+    list.appendChild(emptyFriendsBlock(loadError));
+  }
+  root.appendChild(el("section", { class: "dm-wrap" }, [header, list]));
+}
+
+function emptyFriendsBlock(loadError) {
+  // Both "user has no friends yet" and "we couldn't reach /friends" land here.
+  // We only mention the real error in a faint secondary line so the page
+  // still feels intentional.
+  const block = el("div", { class: "empty", style: { padding: "60px 20px" } }, [
+    el("div", { style: { fontSize: "44px", marginBottom: "12px" } }, "💬"),
+    el("div", { style: { fontWeight: "600", marginBottom: "6px" } }, "아직 친구가 없어요"),
+    el("div", { class: "muted", style: { marginBottom: "14px" } },
+      "친구를 추가하면 여기서 바로 대화를 시작할 수 있어요."),
+  ]);
+  if (loadError) {
+    block.appendChild(el("div", { class: "muted", style: { fontSize: "12px", marginTop: "10px" } },
+      `(목록을 잠시 가져오지 못했어요 — 새로고침 후 다시 시도해주세요)`));
+  }
+  return block;
+}
+
+// FriendListDto shape varies; try common field names to find the *other* user.
+function pickPeer(friend) {
+  const me = Number(auth.meId);
+  // Try direct fields first
+  const candidates = [
+    { id: friend.peerId, name: friend.peerName, image: friend.peerImage },
+    { id: friend.friendId, name: friend.friendName, image: friend.friendImage },
+    { id: friend.memberId, name: friend.memberName, image: friend.memberImage },
+    { id: friend.id, name: friend.name, image: friend.image },
+  ];
+  // Sender/receiver style: pick the one that isn't me
+  if (friend.senderId != null && friend.receiverId != null) {
+    const isSenderMe = Number(friend.senderId) === me;
+    candidates.unshift({
+      id: isSenderMe ? friend.receiverId : friend.senderId,
+      name: isSenderMe ? (friend.receiverName || friend.name) : (friend.senderName || friend.name),
+    });
+  }
+  for (const c of candidates) {
+    if (c.id != null && Number(c.id) !== me) return { id: Number(c.id), name: c.name, image: c.image };
+  }
+  // Last resort: any non-me id we can spot
+  for (const [k, v] of Object.entries(friend || {})) {
+    if (k.toLowerCase().endsWith("id") && typeof v === "number" && v !== me) {
+      return { id: v, name: friend.name || friend.peerName || `user${v}` };
+    }
+  }
+  return { id: null };
+}
+
+async function renderConversation(root, peerId) {
+  root.innerHTML = "";
+  root.appendChild(el("div", { class: "center muted", style: { padding: "40px" } }, [el("span", { class: "spinner" })]));
+
+  let peer = null, page = null;
+  try {
+    [peer, page] = await Promise.all([
+      api.get(`/members/${peerId}`).catch(() => null),
+      api.get(`/messages/with/${peerId}?page=0&size=100`).catch(() => null),
+    ]);
+  } catch (e) {
+    root.innerHTML = "";
+    root.appendChild(el("div", { class: "empty" }, `대화 로딩 실패: ${e.message}`));
+    return;
+  }
+  const peerName = (peer && peer.name) || `user${peerId}`;
+
+  root.innerHTML = "";
+  const list = el("div", { class: "dm-thread" });
+  const input = el("input", { type: "text", placeholder: "메시지 보내기...", onkeydown: (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  }});
+  const sendBtn = el("button", { class: "btn-primary dm-send", onclick: send }, "보내기");
+
+  const messages = (page?.content ?? []);
+  messages.forEach(m => list.appendChild(messageRow(m)));
+  setTimeout(() => list.scrollTo({ top: list.scrollHeight }), 0);
+
+  // Subscribe to live pushes for this peer
+  const unsub = onIncoming((m) => {
+    if (Number(m.senderId) === Number(peerId) || Number(m.receiverId) === Number(peerId)) {
+      list.appendChild(messageRow(m));
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    } else {
+      toast(`💬 새 메시지 (user${m.senderId})`);
+    }
+  });
+  // Detach on hashchange so we don't double-append after navigation
+  const cleanup = () => { unsub(); window.removeEventListener("hashchange", cleanup); };
+  window.addEventListener("hashchange", cleanup);
+
+  async function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    sendBtn.disabled = true;
+    try {
+      const dto = await api.post("/messages", { receiverId: Number(peerId), content: text });
+      input.value = "";
+      list.appendChild(messageRow(dto));
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    } catch (e) {
+      toast(e.message || "전송 실패");
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  root.appendChild(
+    el("section", { class: "dm-conv" }, [
+      el("div", { class: "dm-conv-head" }, [
+        el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/dm"; } }, "← 목록"),
+        avatar(peerName),
+        el("div", { class: "name" }, peerName),
+      ]),
+      list,
+      el("div", { class: "dm-composer" }, [input, sendBtn]),
+    ])
+  );
+
+  setTimeout(() => input.focus(), 0);
+}
+
+function messageRow(m) {
+  const me = Number(auth.meId);
+  const mine = Number(m.senderId) === me;
+  return el("div", { class: `dm-msg ${mine ? "mine" : "theirs"}` }, [
+    el("div", { class: "dm-bubble" }, m.message || ""),
+    el("div", { class: "dm-time muted" }, fmtTimeAgo(m.createdAt) || ""),
+  ]);
+}
