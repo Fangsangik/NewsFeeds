@@ -91,6 +91,8 @@ input, textarea {
   padding: 0 0;
 }
 .app.wide { max-width: 935px; }
+/* 상세/DM 화면은 사진·대화 영역이 넓어야 하므로 컨테이너를 넓힌다. */
+.app:has(.detail), .app:has(.dm-conv), .app:has(.dm-wrap) { max-width: 860px; }
 
 /* ---------- Card (post) ---------- */
 .card {
@@ -505,7 +507,7 @@ input, textarea {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
-  position: sticky; top: 54px; z-index: 5;
+  flex-shrink: 0; /* 헤더는 flex 컬럼 상단에 고정 — sticky는 첫 메시지를 가려 제거 */
 }
 .dm-conv-head .name { font-weight: 600; }
 
@@ -569,7 +571,7 @@ input, textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 6fr 4fr; /* 사진 : 댓글 = 6 : 4 */
   min-height: 540px;
   overflow: hidden;
 }
@@ -602,6 +604,11 @@ input, textarea {
 }
 .detail .comment .text { line-height: 1.35; }
 .detail .comment .name { font-weight: 600; margin-right: 6px; }
+.detail .reply-link { display: inline-block; margin-top: 4px; font-size: 12px; color: var(--text-muted); cursor: pointer; }
+.detail .reply-link:hover { color: var(--text); }
+.detail .reply-box { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+.detail .reply-box .reply-input { flex: 1; border: 1px solid var(--border); border-radius: 14px; padding: 6px 10px; outline: none; font-size: 13px; }
+.detail .reply-box .reply-send { color: var(--accent); font-weight: 600; font-size: 13px; }
 .detail .child {
   margin-left: 38px;
 }
