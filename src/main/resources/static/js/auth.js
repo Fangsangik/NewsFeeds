@@ -46,6 +46,11 @@ export function renderLogin(root) {
         el("div", { class: "brand" }, "Newsfeed"),
         form,
         el("div", { class: "divider" }, "OR"),
+        el("button", {
+          class: "kakao-btn",
+          type: "button",
+          onclick: () => { window.location.href = "/kakao/authorize"; },
+        }, "카카오로 로그인"),
         el("a", { class: "muted-link", href: "#/signup" }, "계정 만들기"),
       ]),
       el("div", { class: "auth-foot" }, [

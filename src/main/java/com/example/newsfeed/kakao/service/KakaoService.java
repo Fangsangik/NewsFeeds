@@ -13,12 +13,22 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 
 
 @Slf4j
 @Service
 public class KakaoService {
+
+    /** 카카오 인가 코드 요청용 authorize URL (프런트 '카카오 로그인' 버튼이 여기로 리다이렉트). */
+    public String getAuthorizeUrl() {
+        return "https://kauth.kakao.com/oauth/authorize?response_type=code"
+                + "&client_id=" + clientId
+                + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+    }
 
     private final JwtProvider jwtProvider;
     private final MemberService memberService;
@@ -85,8 +95,11 @@ public class KakaoService {
                 LoginType.KAKAO_USER
         );
 
-
-        return jwtProvider.generateTokens(jwtMemberDto);
+        // 콜백 부트스트랩이 프런트 localStorage(meId/meEmail)까지 채울 수 있도록 함께 반환.
+        Map<String, String> tokens = new HashMap<>(jwtProvider.generateTokens(jwtMemberDto));
+        tokens.put("memberId", String.valueOf(member.getId()));
+        tokens.put("email", member.getEmail());
+        return tokens;
     }
 
     /**

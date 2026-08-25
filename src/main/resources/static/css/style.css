@@ -275,6 +275,20 @@ input, textarea {
   color: var(--text-muted);
   font-size: 13px;
 }
+.kakao-btn {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 11px 12px;
+  background: #FEE500;
+  color: #191600;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kakao-btn:hover { background: #f5dc00; }
 .auth-foot {
   background: var(--surface);
   border: 1px solid var(--border);

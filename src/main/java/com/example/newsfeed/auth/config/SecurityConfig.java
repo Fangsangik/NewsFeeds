@@ -63,6 +63,7 @@ public class SecurityConfig {
                     "/auth/login", "/auth/refresh", "/auth/reissue",
                     "/members/signup",
                     "/kakao/**",
+                    "/callback",
                     "/ws/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.GET,
