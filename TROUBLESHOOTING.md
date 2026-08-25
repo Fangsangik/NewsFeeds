@@ -788,3 +788,34 @@ Alice(memberId 130) / Bob(131) 두 계정으로 게시/좋아요/댓글/대댓�
 - **B8 댓글 작성자 실명**: `CommentResponseDto`에 `authorId/authorName` 추가(`comment.getMember()`), `detail.js commentRow`가 실명 표시. (기존 "user" 하드코딩 제거)
 - **B9 대댓글 UI**: `detail.js`에 최상위 댓글마다 "답글 달기" 입력 추가 → `POST /comments {parentId}`. 백엔드는 이미 1단계 대댓글 지원.
 - **B10 DM/프로필 상대 실명**: `MemberResponseDto`에 `name/email/image` 추가 → `/members/{id}`가 실명 반환. DM 상대 "user131"→"Bob", 프로필 이름도 정상.
+
+---
+
+## 2026-08-25 — 인스타형 기능 확장 중 발견/해결한 버그
+
+### T1) 한글 IME에서 메시지·댓글이 2번 전송됨 (영어는 1번)
+- **증상**: DM/댓글을 한글로 치고 Enter → 요청이 2번, 내용 중복. 영어로 치면 1번.
+- **근본원인**: 한글 IME 조합 확정 Enter와 실제 제출 Enter가 연달아 발생 → `onkeydown`의 `key==="Enter"`가 2번 fire → send/submit 2회.
+- **규명**: 버튼 클릭은 1회(정상)인데 Enter만 2회인 점 + "영어1/한글2" 단서로 IME 조합 문제 확정.
+- **수정**: Enter 핸들러에 `!e.isComposing` 가드(dm.js, detail.js 댓글/답글). 추가 방어로 메시지 id 기준 dedup, STOMP 클라이언트 중복 생성 방지, 만료 토큰 선제 refresh(아래 T2).
+
+### T2) 만료 토큰에서 동일 POST가 2번 찍힘
+- **원인**: access token 만료 시 첫 요청이 401 → `tryRefresh` → 재시도. `/messages` 등 POST가 네트워크에 2번 보임(첫 401은 컨트롤러 전 거부라 데이터는 1건).
+- **수정**: `api.js`에서 요청 전 JWT `exp`를 디코드해 만료면 **선제 refresh** → 401 왕복/유령 POST 제거.
+- (연관) 만료 토큰이 **403**이면 프런트의 401→refresh가 안 돌아 '요청 실패'로 끝남 → SecurityConfig에 401 AuthenticationEntryPoint 추가(앞선 커밋).
+
+### T3) 댓글 삭제가 항상 404
+- **원인**: `CommentServiceImpl.deleteComment`의 회원 존재 체크가 반전(`existsById`가 true면 예외).
+- **수정**: `!existsById`로 정정.
+
+### T4) 좋아요가 "카운터"라 내가 눌렀는지 알 수 없음
+- **원인**: `Like`가 피드당 1행 + `likeCount` 증감(누가 눌렀는지 미추적) → 프런트가 캐시로 추정, 새로고침 시 하트 오류.
+- **수정**: **per-user 좋아요**(회원당 1행, 존재=좋아요)로 리팩터. like=행 생성(중복 무시), dislike=행 삭제, count=행 수, likedByMe=존재 여부. 정렬 쿼리 SUM→COUNT.
+
+### T5) 친구 상태 조회에서 500 (NonUniqueResult)
+- **원인**: 두 회원 사이 Friend 행이 여러 개(요청+수락/테스트 중복)인데 `findBetween`이 `Optional` 단건 조회 → NonUnique 예외.
+- **수정**: `List<Friend>` 반환 + 서비스에서 ACCEPTED 우선 판정, 해제 시 전부 삭제(중복 정리).
+
+### T6) DM 대화목록 미리보기가 오래된 메시지를 표시
+- **원인**: 대화 쿼리가 `createdAt ASC`라 `size=1`이 가장 오래된 메시지를 반환.
+- **수정**: 적당한 페이지의 마지막 원소(최신)를 미리보기로.
