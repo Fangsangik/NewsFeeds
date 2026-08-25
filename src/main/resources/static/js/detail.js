@@ -119,6 +119,24 @@ function buildView(feedId, feed, likeData, comments) {
       ])
     : null;
 
+  // 저장(북마크) + 공유(링크 복사)
+  const bookmarkBtn = el("button", { class: "iconbtn bookmark", title: "저장", onclick: toggleBookmark }, "🔖");
+  api.get(`/bookmarks/${feedId}`).then(r => { if (r?.bookmarked) bookmarkBtn.classList.add("on"); }).catch(() => {});
+  async function toggleBookmark() {
+    if (!auth.isLoggedIn) { location.hash = "#/login"; return; }
+    try {
+      const r = await api.post(`/bookmarks/${feedId}`);
+      bookmarkBtn.classList.toggle("on", !!r?.bookmarked);
+      toast(r?.bookmarked ? "저장했어요." : "저장을 해제했어요.");
+    } catch (err) { toast(err.message || "저장 실패"); }
+  }
+  const shareBtn = el("button", { class: "iconbtn share-link", title: "링크 복사", onclick: shareLink }, "🔗");
+  async function shareLink() {
+    const url = `${location.origin}/#/feed/${feedId}`;
+    try { await navigator.clipboard.writeText(url); toast("링크가 복사되었습니다."); }
+    catch { toast(url); }
+  }
+
   const mediaImg = feed?.image
     ? el("img", { src: feed.image, alt: feed.title || "" })
     : el("div", { class: "placeholder" }, "이 게시물에는 이미지가 없습니다.");
@@ -138,7 +156,7 @@ function buildView(feedId, feed, likeData, comments) {
         ownerActions,
       ]),
       commentsBody,
-      el("div", { class: "side-actions" }, [heart]),
+      el("div", { class: "side-actions" }, [heart, bookmarkBtn, shareBtn]),
       likeCountEl,
       el("div", { class: "composer" }, [commentInput, submitBtn]),
     ]),

@@ -1,6 +1,6 @@
 import { auth } from "./store.js";
 import { renderLogin, renderSignup, logout } from "./auth.js";
-import { renderHome, openComposer } from "./feed.js";
+import { renderHome, openComposer, renderSearch, renderSaved } from "./feed.js";
 import { renderDetail } from "./detail.js";
 import { renderProfile } from "./profile.js";
 import { renderDm, connectStomp, disconnectStomp } from "./dm.js";
@@ -29,6 +29,8 @@ function buildTopbar() {
       el("div", { class: "nav-actions" }, auth.isLoggedIn ? [
         el("button", { class: "icon-btn", title: "새 게시물", onclick: () => openComposer(() => route()) }, "＋"),
         el("button", { class: "icon-btn", title: "홈", onclick: () => { location.hash = "#/"; } }, "🏠"),
+        el("button", { class: "icon-btn", title: "검색", onclick: () => { location.hash = "#/search"; } }, "🔍"),
+        el("button", { class: "icon-btn", title: "저장한 게시물", onclick: () => { location.hash = "#/saved"; } }, "🔖"),
         (() => {
           const badge = el("span", { class: "nav-badge", style: { display: "none" } }, "");
           const btn = el("button", { class: "icon-btn badge-wrap", title: "메시지", onclick: () => { location.hash = "#/dm"; } }, ["💬", badge]);
@@ -77,6 +79,11 @@ function route() {
   if (dmMatch) return renderDm(root, dmMatch[1]);
 
   if (hash === "#/friends" || hash.startsWith("#/friends/")) return renderFriends(root);
+
+  if (hash === "#/saved") return renderSaved(root);
+
+  const searchMatch = hash.match(/^#\/search(?:\/(.*))?/);
+  if (searchMatch) return renderSearch(root, searchMatch[1] ? decodeURIComponent(searchMatch[1]) : "");
 
   return renderHome(root);
 }

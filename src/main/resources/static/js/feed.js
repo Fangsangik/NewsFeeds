@@ -10,17 +10,20 @@ let state = {
   items: [],
 };
 
-let currentSort = "latest"; // "latest" | "popular"
+let currentSort = "following"; // "following" | "latest" | "popular"
 
 export async function renderHome(root) {
   root.innerHTML = "";
   state = { page: 0, size: 10, loading: false, done: false, items: [] };
 
+  const mkTab = (key, label) => el("button", {
+    class: `feed-tab ${currentSort === key ? "active" : ""}`,
+    onclick: () => { if (currentSort !== key) { currentSort = key; renderHome(root); } },
+  }, label);
   const tabs = el("div", { class: "feed-tabs" }, [
-    el("button", { class: `feed-tab ${currentSort === "latest" ? "active" : ""}`,
-      onclick: () => { if (currentSort !== "latest") { currentSort = "latest"; renderHome(root); } } }, "최신"),
-    el("button", { class: `feed-tab ${currentSort === "popular" ? "active" : ""}`,
-      onclick: () => { if (currentSort !== "popular") { currentSort = "popular"; renderHome(root); } } }, "인기"),
+    mkTab("following", "팔로잉"),
+    mkTab("latest", "최신"),
+    mkTab("popular", "인기"),
   ]);
   const list = el("div", { class: "feed-list" });
   const sentinel = el("div", { class: "center muted", style: { padding: "16px" } }, "");
@@ -34,11 +37,16 @@ export async function renderHome(root) {
     sentinel.innerHTML = "";
     sentinel.appendChild(el("span", { class: "spinner" }));
     try {
-      const endpoint = currentSort === "popular" ? "likecount" : "latest";
-      const data = await api.get(`/feeds/${endpoint}?page=${state.page}&size=${state.size}`, { auth: false });
+      const endpoint = currentSort === "popular" ? "likecount"
+        : currentSort === "following" ? "following" : "latest";
+      // 팔로잉 피드는 로그인 필요(내 친구 기준). 나머지는 공개.
+      const data = await api.get(`/feeds/${endpoint}?page=${state.page}&size=${state.size}`,
+        currentSort === "following" ? {} : { auth: false });
       const items = data?.content ?? [];
       if (!items.length && state.page === 0) {
-        list.appendChild(el("div", { class: "empty" }, "아직 게시물이 없어요. 첫 글을 올려보세요!"));
+        list.appendChild(el("div", { class: "empty" }, currentSort === "following"
+          ? "팔로우한 친구의 글이 없어요. 친구를 추가하거나 '최신' 탭을 눌러보세요!"
+          : "아직 게시물이 없어요. 첫 글을 올려보세요!"));
       }
       items.forEach(item => list.appendChild(renderCard(item)));
       state.items.push(...items);
@@ -251,4 +259,50 @@ export function openComposer(onCreated) {
   );
 
   document.body.appendChild(backdrop);
+}
+
+// ---------------- 검색 (게시물/해시태그) ----------------
+export async function renderSearch(root, query) {
+  root.innerHTML = "";
+  const input = el("input", { class: "search-input", placeholder: "게시물 검색 (예: 강남, #여행)", value: query || "" });
+  const results = el("div", { class: "feed-list" });
+  root.appendChild(el("div", { class: "search-bar" }, input));
+  root.appendChild(results);
+
+  let timer = null;
+  async function run() {
+    const q = input.value.trim();
+    results.innerHTML = "";
+    if (!q) { results.appendChild(el("div", { class: "empty" }, "검색어를 입력하세요.")); return; }
+    results.appendChild(el("div", { class: "center muted", style: { padding: "16px" } }, el("span", { class: "spinner" })));
+    try {
+      const data = await api.get(`/feeds/search?q=${encodeURIComponent(q)}&page=0&size=30`, { auth: false });
+      const items = data?.content ?? [];
+      results.innerHTML = "";
+      if (!items.length) { results.appendChild(el("div", { class: "empty" }, "검색 결과가 없어요.")); return; }
+      items.forEach(item => results.appendChild(renderCard(item)));
+    } catch (err) {
+      results.innerHTML = "";
+      results.appendChild(el("div", { class: "empty" }, `검색 실패: ${err.message}`));
+    }
+  }
+  input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 300); });
+  setTimeout(() => input.focus(), 0);
+  if (query) run();
+}
+
+// ---------------- 저장한 게시물 ----------------
+export async function renderSaved(root) {
+  root.innerHTML = "";
+  root.appendChild(el("h2", { class: "page-title" }, "저장한 게시물"));
+  const list = el("div", { class: "feed-list" });
+  root.appendChild(list);
+  try {
+    const data = await api.get(`/bookmarks?page=0&size=30`);
+    const items = data?.content ?? [];
+    if (!items.length) { list.appendChild(el("div", { class: "empty" }, "저장한 게시물이 없어요.")); return; }
+    items.forEach(item => list.appendChild(renderCard(item)));
+  } catch (err) {
+    list.appendChild(el("div", { class: "empty" }, `불러오기 실패: ${err.message}`));
+  }
 }

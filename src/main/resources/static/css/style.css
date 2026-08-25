@@ -726,3 +726,16 @@ input, textarea {
 }
 .modal-body.col input:focus { border-color: var(--border-strong); }
 .profile-edit-avatar { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+/* ---------- Round 1: 팔로잉/검색/저장/공유 ---------- */
+.detail .side-actions .iconbtn { font-size: 20px; line-height: 1; filter: grayscale(1); opacity: .8; }
+.detail .side-actions .iconbtn:hover { opacity: 1; }
+.detail .side-actions .bookmark.on { filter: none; opacity: 1; }
+
+.search-bar { margin: 0 0 16px; }
+.search-input {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 10px; outline: none; font-size: 14px; background: var(--surface);
+}
+.search-input:focus { border-color: var(--border-strong); }
+.page-title { margin: 4px 2px 14px; font-size: 18px; }
