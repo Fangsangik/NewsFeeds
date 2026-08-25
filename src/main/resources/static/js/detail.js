@@ -144,7 +144,13 @@ function buildView(feedId, feed, likeData, comments) {
     mediaImg.replaceWith(el("div", { class: "placeholder" }, "📷"));
   });
 
+  const closeBtn = el("button", {
+    class: "detail-close", title: "닫기",
+    onclick: () => { if (window.history.length > 1) window.history.back(); else location.hash = "#/"; },
+  }, "✕");
+
   return el("div", { class: "detail" }, [
+    closeBtn,
     el("div", { class: "media" }, mediaImg),
     el("div", { class: "side" }, [
       el("div", { class: "side-head" }, [
