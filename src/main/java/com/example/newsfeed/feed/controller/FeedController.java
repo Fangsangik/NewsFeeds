@@ -65,6 +65,24 @@ public class FeedController {
         Page<FeedWithLikeCountDto> feeds = feedService.getAllFeedsOrderByLatest(page, size);
         return ResponseEntity.ok(new CommonResponse<>("최신순 피드 조회 완료", feeds));
     }
+
+    // 팔로우(친구) 기반 홈 피드
+    @GetMapping("/following")
+    public ResponseEntity<CommonResponse<Page<FeedWithLikeCountDto>>> getFollowing(@RequestParam(defaultValue = "0") int page,
+                                                                                   @RequestParam(defaultValue = "10") int size) {
+        Long me = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+        Page<FeedWithLikeCountDto> feeds = feedService.getFollowingFeed(me, page, size);
+        return ResponseEntity.ok(new CommonResponse<>("팔로잉 피드 조회 완료", feeds));
+    }
+
+    // 게시물 검색 (제목/내용/해시태그)
+    @GetMapping("/search")
+    public ResponseEntity<CommonResponse<Page<FeedWithLikeCountDto>>> search(@RequestParam String q,
+                                                                             @RequestParam(defaultValue = "0") int page,
+                                                                             @RequestParam(defaultValue = "10") int size) {
+        Page<FeedWithLikeCountDto> feeds = feedService.searchFeeds(q, page, size);
+        return ResponseEntity.ok(new CommonResponse<>("게시물 검색 완료", feeds));
+    }
     @PatchMapping("/{feedId}")
     public ResponseEntity<CommonResponse<FeedUpdateResponseDto>> updateFeed(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                                                             @PathVariable Long feedId,

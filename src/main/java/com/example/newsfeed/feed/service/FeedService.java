@@ -17,4 +17,6 @@ public interface FeedService {
     List<FeedResponseDto> getFeedsByMemberId(Long memberId);
     Page<FeedWithLikeCountDto> getAllFeedsOrderByLikeCount(int page, int size);
     Page<FeedWithLikeCountDto> getAllFeedsOrderByLatest(int page, int size);
+    Page<FeedWithLikeCountDto> getFollowingFeed(Long memberId, int page, int size);
+    Page<FeedWithLikeCountDto> searchFeeds(String q, int page, int size);
 }
