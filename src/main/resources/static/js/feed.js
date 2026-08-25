@@ -190,18 +190,15 @@ export function openComposer(onCreated) {
 
   async function share() {
     errEl.textContent = "";
-    if (!pickedFile && !uploadedUrl) {
-      errEl.textContent = "사진을 선택해주세요.";
-      return;
-    }
-    if (!titleIn.value.trim()) {
-      errEl.textContent = "제목을 입력해주세요.";
+    // 사진은 선택 항목. 제목이나 내용 중 하나만 있으면 글만으로도 게시 가능.
+    if (!titleIn.value.trim() && !contentIn.value.trim()) {
+      errEl.textContent = "제목이나 내용을 입력해주세요.";
       return;
     }
     shareBtn.disabled = true;
     shareBtn.textContent = "공유 중...";
     try {
-      if (!uploadedUrl) {
+      if (pickedFile && !uploadedUrl) {
         const r = await api.uploadImage(pickedFile);
         uploadedUrl = r?.url;
         if (!uploadedUrl) throw new Error("이미지 업로드 실패");
