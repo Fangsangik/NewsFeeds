@@ -746,3 +746,45 @@ SockJS 폴백을 빼고 **raw WebSocket + STOMP**로 직접 연결. `?token=...`
 ### 검증
 
 이날 작업 후 `scripts/e2e.sh`는 **52 / 52 PASS**. `/messages/*`, `/members/search`, `/ws/info(→ raw WS endpoint)` 추가 smoke test 통과.
+
+---
+
+## 2026-08-25 — 2계정 E2E 브라우저 검증에서 발견한 버그 + 수정
+
+Alice(memberId 130) / Bob(131) 두 계정으로 게시/좋아요/댓글/대댓글/친구/DM 전 기능을 실제 브라우저로 돌려 확인. 아래는 발견 → 근본원인 → 수정.
+
+### B1) 게시글 작성이 사실상 막힘 (위치 "(선택)"인데 실제 필수)
+- **증상**: 컴포저에서 사진+제목 넣고 공유 → "요청 실패". 이미지 업로드(`/files/image`)는 200인데 `POST /feeds`가 400.
+- **원인**: 프런트는 항상 `latitude/longitude: null` 전송 → 백엔드가 주소로 카카오 지오코딩을 **강제**. 빈 주소 → "주소 또는 좌표 정보가 충분하지 않습니다", 영문 주소 → "좌표를 찾을 수 없습니다"(카카오 400). 실제 한국 주소만 성공. (`FeedServiceImpl.registerFeed`)
+- **수정**: 위치를 진짜 선택사항으로. 주소/좌표 둘 다 없으면 위치 없이 게시 허용. 주소만 있으면 좌표 보완, 좌표만 있으면 주소 보완. 지오코딩으로 얻은 좌표를 실제로 저장(기존엔 계산만 하고 DTO의 null을 저장하던 버그도 동반 수정). `FeedRequestDto.toDto`가 보정된 address/lat/lng를 받도록 변경.
+
+### B2) 프로필이 항상 "0 게시물"
+- **증상**: Alice가 글을 올려도 `#/profile/130`에서 "아직 게시물이 없어요". `/feeds/members/130` → 200이지만 빈 배열(작성 글 author.id=130 확인됨).
+- **원인**: `FeedController.getFeedsByMemberId(Long memberId)`에 **`@PathVariable` 누락** → `{memberId}` 미바인딩(null) → 쿼리 결과 없음.
+- **수정**: `@PathVariable Long memberId`.
+
+### B3) DM이 엉뚱한 회원에게 전송됨 → 실제 미전달 (Critical)
+- **증상**: Alice가 Bob과 친구를 맺고 DM 전송했으나 Bob 수신 0건. 대화창이 `#/dm/18`로 열리고 상대 이름이 "Alice"/"user18"로 표시.
+- **원인**: `FriendServiceImpl.findFriendList`가 `new FriendListDto(friend.getId(), friend.getSender().getName())` — **Friend 테이블 row PK(18)** 를 회원 id로, **항상 sender(Alice)** 를 이름으로 반환. 프런트는 이 id를 DM 수신자 id로 사용 → 유령 member 18로 전송.
+- **수정**: 로그인 회원 기준 **상대방(counterpart)** 의 memberId + name 반환.
+
+### B4) 받은/보낸 친구요청 목록이 본인 정보를 잘못 표시
+- **원인**: `findReceivedFriendRequests`가 요청자(sender)가 아닌 `friend.getReceiver()`(=나) 반환 + DTO 인자(email,name) 순서 뒤바뀜. `findSenderInfo`(보낸 요청)도 receiver가 아닌 sender 반환 + 프런트가 읽는 필드명(receiver*)과 DTO 필드명(sender*) 불일치로 "?" 표기.
+- **수정**: 받은 요청은 sender의 email/name을 올바른 슬롯에, 보낸 요청은 receiver의 email/name을 프런트가 읽는 필드명(receiverEmail/receiverName)으로 반환.
+
+### B5) [UI] 상세 페이지 사진 잘림 + 댓글 영역 과대
+- **원인**: `.detail`이 `--max: 470px` 좁은 컨테이너에 `grid-template-columns: 1fr 360px`(댓글 고정 360px)라 사진이 눌림.
+- **수정**: 상세/DM 화면 컨테이너를 넓히고(`:has`) `.detail`을 **사진:댓글 = 6:4**(`6fr 4fr`)로.
+
+### B6) [UI] DM 첫 메시지가 헤더에 가려짐
+- **원인**: `.dm-conv-head { position: sticky; top: 54px; z-index: 5 }` 가 스크롤 컨테이너 상단 메시지를 덮음(버블은 DOM엔 정상 렌더).
+- **수정**: sticky 제거(플렉스 컬럼 상단 고정이라 불필요).
+
+### B7) DM 시간 "9시간 전" 오차
+- **원인**: 앱 컨테이너 TZ=UTC라 `LocalDateTime.now()`가 UTC. 프런트는 타임존 없는 값을 로컬(KST)로 파싱 → +9h.
+- **수정**: docker-compose app 서비스에 `TZ: Asia/Seoul`.
+
+### B8~B10) 경미 항목도 후속 처리 완료
+- **B8 댓글 작성자 실명**: `CommentResponseDto`에 `authorId/authorName` 추가(`comment.getMember()`), `detail.js commentRow`가 실명 표시. (기존 "user" 하드코딩 제거)
+- **B9 대댓글 UI**: `detail.js`에 최상위 댓글마다 "답글 달기" 입력 추가 → `POST /comments {parentId}`. 백엔드는 이미 1단계 대댓글 지원.
+- **B10 DM/프로필 상대 실명**: `MemberResponseDto`에 `name/email/image` 추가 → `/members/{id}`가 실명 반환. DM 상대 "user131"→"Bob", 프로필 이름도 정상.
