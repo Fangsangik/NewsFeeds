@@ -11,4 +11,6 @@ public interface FriendService {
     Page<FriendRequestResponseDto> findReceivedFriendRequests(Member member, int page, int size);
     void deleteFriend(Member member, Long friendId);
     Page<FriendListDto> findFriendList(Member member, int page, int size);
+    String statusWith(Long meId, Long otherId);
+    void deleteBetween(Long meId, Long otherId);
 }

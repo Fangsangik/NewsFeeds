@@ -144,6 +144,24 @@ public class FriendServiceImpl implements FriendService {
         friendRepository.delete(findFriend);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public String statusWith(Long meId, Long otherId) {
+        if (meId == null || meId.equals(otherId)) return "self";
+        // ACCEPTED가 있으면 friends 우선, 아니면 REQUESTED 방향 판단.
+        var rels = friendRepository.findBetween(meId, otherId);
+        if (rels.stream().anyMatch(f -> f.getStatus() == FriendRequestStatus.ACCEPTED)) return "friends";
+        return rels.stream().findFirst()
+                .map(f -> f.getSender().getId().equals(meId) ? "requested_by_me" : "requested_to_me")
+                .orElse("none");
+    }
+
+    @Transactional
+    @Override
+    public void deleteBetween(Long meId, Long otherId) {
+        friendRepository.findBetween(meId, otherId).forEach(friendRepository::delete);
+    }
+
     private boolean isAlreadyFriend(Member sender, Member receiver) {
         return friendRepository.existsBySenderAndReceiver(sender, receiver)
                 || friendRepository.existsBySenderAndReceiver(receiver, sender);
