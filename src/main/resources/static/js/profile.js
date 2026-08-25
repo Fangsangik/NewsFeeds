@@ -30,7 +30,7 @@ export async function renderProfile(root, memberId) {
   root.innerHTML = "";
   root.appendChild(
     el("div", {}, [
-      buildHeader(displayName, list.length, isMe, member && member.image),
+      buildHeader(displayName, list.length, isMe, member && member.image, memberId, member),
       list.length === 0
         ? el("div", { class: "empty", style: { marginTop: "20px" } }, "아직 게시물이 없어요.")
         : buildGrid(list, memberId),
@@ -38,9 +38,12 @@ export async function renderProfile(root, memberId) {
   );
 }
 
-function buildHeader(name, count, isMe, image) {
+function buildHeader(name, count, isMe, image, memberId, member) {
   const actions = isMe
-    ? [el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/"; } }, "홈으로")]
+    ? [
+        el("button", { class: "btn-ghost", onclick: () => openProfileEditor(memberId, member) }, "프로필 편집"),
+        el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/"; } }, "홈으로"),
+      ]
     : [];
   return el("section", { class: "profile-head" }, [
     el("div", { class: "profile-avatar" }, avatar(name, "lg", image)),
@@ -58,10 +61,12 @@ function buildHeader(name, count, isMe, image) {
 
 function buildGrid(feeds, memberId) {
   const cells = feeds.map((f, i) => {
+    const img = f.image
+      ? el("img", { src: f.image, alt: f.title || "" })
+      : el("div", { class: "grid-cell-placeholder" }, "📷");
+    if (f.image) img.addEventListener("error", () => img.replaceWith(el("div", { class: "grid-cell-placeholder" }, "📷")));
     const cell = el("div", { class: "grid-cell" }, [
-      f.image
-        ? el("img", { src: f.image, alt: f.title || "" })
-        : el("div", { class: "grid-cell-placeholder" }, "📷"),
+      img,
       el("div", { class: "grid-cell-overlay" }, f.title || ""),
     ]);
     // FeedResponseDto가 feedId를 포함하므로 클릭 시 상세로 이동한다.
@@ -73,4 +78,66 @@ function buildGrid(feeds, memberId) {
     return cell;
   });
   return el("section", { class: "profile-grid" }, cells);
+}
+
+// ---------- 프로필 편집 모달 ----------
+function openProfileEditor(memberId, member) {
+  let pickedFile = null;
+  const nameIn = el("input", { class: "title", placeholder: "이름", value: (member && member.name) || "" });
+  const phoneIn = el("input", { placeholder: "휴대폰 번호 (예: 010-1234-5678)", value: (member && member.phoneNumber) || "" });
+  const addrIn = el("input", { placeholder: "주소", value: (member && member.address) || "" });
+  const pwIn = el("input", { type: "password", placeholder: "현재 비밀번호 (변경 확인용, 필수)" });
+  const errEl = el("div", { class: "error" });
+
+  const preview = el("div", { class: "profile-avatar" }, avatar((member && member.name) || "?", "lg", member && member.image));
+  const fileIn = el("input", { type: "file", accept: "image/*", style: { display: "none" }, onchange: (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    pickedFile = f;
+    preview.innerHTML = "";
+    preview.appendChild(avatar("", "lg", URL.createObjectURL(f)));
+  }});
+  const pickBtn = el("button", { class: "btn-ghost", onclick: () => fileIn.click() }, "사진 변경");
+
+  const saveBtn = el("button", { class: "share", onclick: save }, "저장");
+  function close() { backdrop.remove(); }
+
+  async function save() {
+    errEl.textContent = "";
+    if (!pwIn.value) { errEl.textContent = "현재 비밀번호를 입력해주세요."; return; }
+    saveBtn.disabled = true; saveBtn.textContent = "저장 중...";
+    try {
+      let imageUrl = member && member.image;
+      if (pickedFile) { const r = await api.uploadImage(pickedFile); imageUrl = r?.url || imageUrl; }
+      await api.put("/members/update", {
+        id: memberId,
+        password: pwIn.value,
+        name: nameIn.value.trim(),
+        phoneNumber: phoneIn.value.trim(),
+        address: addrIn.value.trim(),
+        image: imageUrl || "",
+      });
+      toast("프로필이 수정되었습니다.");
+      close();
+      renderProfile(document.getElementById("app"), memberId);
+    } catch (err) {
+      errEl.textContent = err.message || "수정 실패";
+      saveBtn.disabled = false; saveBtn.textContent = "저장";
+    }
+  }
+
+  const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) close(); } });
+  backdrop.appendChild(
+    el("div", { class: "modal small" }, [
+      el("div", { class: "modal-head" }, [
+        el("button", { onclick: close, title: "닫기" }, "✕"),
+        el("span", {}, "프로필 편집"),
+        saveBtn,
+      ]),
+      el("div", { class: "modal-body col" }, [
+        el("div", { class: "profile-edit-avatar" }, [preview, pickBtn]),
+        nameIn, phoneIn, addrIn, pwIn, errEl, fileIn,
+      ]),
+    ])
+  );
+  document.body.appendChild(backdrop);
 }

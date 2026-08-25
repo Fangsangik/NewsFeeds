@@ -87,14 +87,20 @@ async function renderInbox(root) {
     friends.forEach(f => {
       const peer = pickPeer(f);
       if (!peer.id) return;
+      const sub = el("div", { class: "sub muted" }, "대화 시작하기");
       const row = el("button", { class: "dm-list-row", onclick: () => { location.hash = `#/dm/${peer.id}`; } }, [
-        avatar(peer.name || `user${peer.id}`),
+        avatar(peer.name || `user${peer.id}`, "sm", peer.image),
         el("div", { class: "dm-list-meta" }, [
           el("div", { class: "name" }, peer.name || `user${peer.id}`),
-          el("div", { class: "sub muted" }, "대화 시작하기"),
+          sub,
         ]),
       ]);
       list.appendChild(row);
+      // 마지막 메시지 미리보기 (가벼운 개별 조회)
+      api.get(`/messages/with/${peer.id}?page=0&size=1`).then(page => {
+        const last = (page?.content ?? [])[0];
+        if (last?.message) sub.textContent = (Number(last.senderId) === Number(auth.meId) ? "나: " : "") + last.message;
+      }).catch(() => {});
     });
   } else {
     list.appendChild(emptyFriendsBlock(loadError));
@@ -176,6 +182,11 @@ async function renderConversation(root, peerId) {
   const messages = (page?.content ?? []);
   messages.forEach(m => list.appendChild(messageRow(m)));
   setTimeout(() => list.scrollTo({ top: list.scrollHeight }), 0);
+
+  // 상대가 보낸 안 읽은 메시지를 읽음 처리 (안읽음 뱃지 정리)
+  messages
+    .filter(m => Number(m.receiverId) === Number(auth.meId) && m.readStatus === false)
+    .forEach(m => api.patch(`/messages/${m.id}/read`).catch(() => {}));
 
   // Subscribe to live pushes for this peer
   const unsub = onIncoming((m) => {

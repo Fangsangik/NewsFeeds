@@ -14,7 +14,8 @@ export async function renderDetail(root, feedId) {
     // 별도 /members/{feedId}/member 호출이 필요 없다. 나머지만 병렬로 가져온다.
     [feed, likeData, comments] = await Promise.all([
       api.get(`/feeds/${feedId}`, { auth: false }),
-      api.get(`/likes/${feedId}`, { auth: false }).catch(() => ({ likeCount: 0 })),
+      // 토큰을 함께 보내 서버가 likedByMe(내가 눌렀는지)를 정확히 반환하게 한다.
+      api.get(`/likes/${feedId}`).catch(() => ({ likeCount: 0, likedByMe: false })),
       api.get(`/comments/feed/${feedId}`, { auth: false }).catch(() => []),
     ]);
   } catch (err) {
@@ -30,7 +31,10 @@ export async function renderDetail(root, feedId) {
 function buildView(feedId, feed, likeData, comments) {
   const author = feed?.author;
   const authorName = author?.name || author?.email?.split("@")[0] || `user${author?.id ?? ""}`;
-  const liked = likes.has(feedId);
+  // 서버의 likedByMe가 있으면 그것을 사용(정합성), 없으면 로컬 캐시로 폴백.
+  const liked = likeData?.likedByMe ?? likes.has(feedId);
+  likes.set(feedId, liked);
+  const isMine = auth.meId && author?.id && Number(auth.meId) === Number(author.id);
 
   const likeCountEl = el("div", { class: "like-count" }, `좋아요 ${likeData?.likeCount ?? 0}개`);
   const heart = el("button", {
@@ -87,12 +91,43 @@ function buildView(feedId, feed, likeData, comments) {
   }
   captionRow.classList.add("caption");
 
+  async function editFeed() {
+    const newTitle = prompt("제목 수정", feed?.title || "");
+    if (newTitle === null) return;
+    const newContent = prompt("내용 수정", feed?.content || "");
+    if (newContent === null) return;
+    try {
+      await api.patch(`/feeds/${feedId}`, { title: newTitle, content: newContent });
+      toast("수정되었습니다.");
+      renderDetail(document.getElementById("app"), feedId);
+    } catch (err) { toast(err.message || "수정 실패"); }
+  }
+
+  async function deleteFeed() {
+    if (!confirm("이 게시물을 삭제할까요?")) return;
+    try {
+      await api.del(`/feeds/${feedId}`);
+      toast("삭제되었습니다.");
+      location.hash = "#/";
+    } catch (err) { toast(err.message || "삭제 실패"); }
+  }
+
+  const ownerActions = isMine
+    ? el("div", { class: "owner-actions" }, [
+        el("button", { class: "owner-btn", onclick: editFeed }, "수정"),
+        el("button", { class: "owner-btn danger", onclick: deleteFeed }, "삭제"),
+      ])
+    : null;
+
+  const mediaImg = feed?.image
+    ? el("img", { src: feed.image, alt: feed.title || "" })
+    : el("div", { class: "placeholder" }, "이 게시물에는 이미지가 없습니다.");
+  if (feed?.image) mediaImg.addEventListener("error", () => {
+    mediaImg.replaceWith(el("div", { class: "placeholder" }, "📷"));
+  });
+
   return el("div", { class: "detail" }, [
-    el("div", { class: "media" },
-      feed?.image
-        ? el("img", { src: feed.image, alt: feed.title || "" })
-        : el("div", { class: "placeholder" }, "이 게시물에는 이미지가 없습니다.")
-    ),
+    el("div", { class: "media" }, mediaImg),
     el("div", { class: "side" }, [
       el("div", { class: "side-head" }, [
         avatar(authorName, "sm", author && author.image),
@@ -100,6 +135,7 @@ function buildView(feedId, feed, likeData, comments) {
           el("div", { class: "name" }, authorName),
           feed?.address ? el("div", { class: "sub" }, feed.address) : null,
         ]),
+        ownerActions,
       ]),
       commentsBody,
       el("div", { class: "side-actions" }, [heart]),
@@ -127,6 +163,16 @@ function commentRow(c, isChild, feedId, refresh) {
     el("span", { class: "text" }, c.content || ""),
   ]);
   const row = el("div", { class: `comment ${isChild ? "child" : ""}` }, [avatar(who), meta]);
+
+  // 내 댓글이면 삭제 버튼
+  if (auth.meId && c.authorId && Number(auth.meId) === Number(c.authorId) && refresh) {
+    const del = el("button", { class: "comment-del", title: "삭제", onclick: async () => {
+      if (!confirm("댓글을 삭제할까요?")) return;
+      try { await api.del(`/comments/${c.commentId}`); await refresh(); }
+      catch (err) { toast(err.message || "삭제 실패"); }
+    }}, "×");
+    row.appendChild(del);
+  }
 
   // 답글은 최상위 댓글에만 (백엔드는 1단계 대댓글 지원)
   if (!isChild && feedId && refresh) {
@@ -169,8 +215,13 @@ async function onLike(feedId, heartEl, countEl) {
   try {
     const path = wasOn ? `/likes/dislike/${feedId}` : `/likes/like/${feedId}`;
     const res = await api.post(path);
-    const fresh = res?.likeCount ?? await api.get(`/likes/${feedId}`, { auth: false }).then(r => r?.likeCount).catch(() => null);
-    if (fresh != null) countEl.textContent = `좋아요 ${fresh}개`;
+    // 서버 응답(likeCount/likedByMe)을 신뢰해 최종 상태를 확정한다.
+    if (res && typeof res.likedByMe === "boolean") {
+      heartEl.classList.toggle("on", res.likedByMe);
+      heartEl.textContent = res.likedByMe ? "♥" : "♡";
+      likes.set(feedId, res.likedByMe);
+    }
+    if (res && res.likeCount != null) countEl.textContent = `좋아요 ${res.likeCount}개`;
   } catch (err) {
     heartEl.classList.toggle("on", wasOn);
     heartEl.textContent = wasOn ? "♥" : "♡";

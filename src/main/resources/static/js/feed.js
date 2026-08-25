@@ -10,12 +10,21 @@ let state = {
   items: [],
 };
 
+let currentSort = "latest"; // "latest" | "popular"
+
 export async function renderHome(root) {
   root.innerHTML = "";
   state = { page: 0, size: 10, loading: false, done: false, items: [] };
 
+  const tabs = el("div", { class: "feed-tabs" }, [
+    el("button", { class: `feed-tab ${currentSort === "latest" ? "active" : ""}`,
+      onclick: () => { if (currentSort !== "latest") { currentSort = "latest"; renderHome(root); } } }, "최신"),
+    el("button", { class: `feed-tab ${currentSort === "popular" ? "active" : ""}`,
+      onclick: () => { if (currentSort !== "popular") { currentSort = "popular"; renderHome(root); } } }, "인기"),
+  ]);
   const list = el("div", { class: "feed-list" });
   const sentinel = el("div", { class: "center muted", style: { padding: "16px" } }, "");
+  root.appendChild(tabs);
   root.appendChild(list);
   root.appendChild(sentinel);
 
@@ -25,7 +34,8 @@ export async function renderHome(root) {
     sentinel.innerHTML = "";
     sentinel.appendChild(el("span", { class: "spinner" }));
     try {
-      const data = await api.get(`/feeds/likecount?page=${state.page}&size=${state.size}`, { auth: false });
+      const endpoint = currentSort === "popular" ? "likecount" : "latest";
+      const data = await api.get(`/feeds/${endpoint}?page=${state.page}&size=${state.size}`, { auth: false });
       const items = data?.content ?? [];
       if (!items.length && state.page === 0) {
         list.appendChild(el("div", { class: "empty" }, "아직 게시물이 없어요. 첫 글을 올려보세요!"));
@@ -70,6 +80,12 @@ function renderCard(item) {
   const image = item.image
     ? el("img", { class: "card-image", src: item.image, alt: item.title || "" })
     : el("div", { class: "card-image placeholder" }, "📷");
+  if (item.image) image.addEventListener("error", () => {
+    const ph = el("div", { class: "card-image placeholder" }, "📷");
+    ph.addEventListener("click", () => { location.hash = `#/feed/${feedId}`; });
+    ph.style.cursor = "pointer";
+    image.replaceWith(ph);
+  });
   image.addEventListener("click", () => { location.hash = `#/feed/${feedId}`; });
   image.style.cursor = "pointer";
 

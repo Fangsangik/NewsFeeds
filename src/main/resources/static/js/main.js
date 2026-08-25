@@ -6,8 +6,19 @@ import { renderProfile } from "./profile.js";
 import { renderDm, connectStomp, disconnectStomp } from "./dm.js";
 import { renderFriends } from "./friends.js";
 import { el } from "./ui.js";
+import { api } from "./api.js";
 
 const root = document.getElementById("app");
+
+async function updateUnreadBadge(badge) {
+  if (!auth.isLoggedIn) return;
+  try {
+    const data = await api.get("/messages/unread?page=0&size=1");
+    const n = data?.totalElements ?? 0;
+    badge.textContent = n > 99 ? "99+" : String(n);
+    badge.style.display = n > 0 ? "flex" : "none";
+  } catch { /* 뱃지는 실패해도 조용히 무시 */ }
+}
 
 function buildTopbar() {
   const topbar = document.getElementById("topbar");
@@ -18,7 +29,12 @@ function buildTopbar() {
       el("div", { class: "nav-actions" }, auth.isLoggedIn ? [
         el("button", { class: "icon-btn", title: "새 게시물", onclick: () => openComposer(() => route()) }, "＋"),
         el("button", { class: "icon-btn", title: "홈", onclick: () => { location.hash = "#/"; } }, "🏠"),
-        el("button", { class: "icon-btn", title: "메시지", onclick: () => { location.hash = "#/dm"; } }, "💬"),
+        (() => {
+          const badge = el("span", { class: "nav-badge", style: { display: "none" } }, "");
+          const btn = el("button", { class: "icon-btn badge-wrap", title: "메시지", onclick: () => { location.hash = "#/dm"; } }, ["💬", badge]);
+          updateUnreadBadge(badge);
+          return btn;
+        })(),
         el("button", { class: "icon-btn", title: "친구", onclick: () => { location.hash = "#/friends"; } }, "👥"),
         el("button", { class: "icon-btn", title: "내 프로필", onclick: () => {
           if (auth.meId) location.hash = `#/profile/${auth.meId}`;

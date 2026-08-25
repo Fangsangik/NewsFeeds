@@ -686,3 +686,43 @@ input, textarea {
   animation: fade .2s ease;
 }
 @keyframes fade { from { opacity: 0; transform: translate(-50%, 8px); } }
+
+/* ---------- 추가 기능 UI (2026-08-25) ---------- */
+/* 홈 피드 최신/인기 토글 */
+.feed-tabs { display: flex; gap: 8px; margin: 0 0 16px; }
+.feed-tab {
+  flex: 1; padding: 8px 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text-muted); font-weight: 600; cursor: pointer;
+}
+.feed-tab.active { color: var(--text); border-color: var(--border-strong); }
+
+/* 상세 소유자 액션 (수정/삭제) */
+.detail .side-head .owner-actions { margin-left: auto; display: flex; gap: 6px; }
+.owner-btn { font-size: 13px; color: var(--accent); font-weight: 600; }
+.owner-btn.danger { color: var(--danger); }
+
+/* 댓글 삭제 버튼 */
+.detail .comment { position: relative; }
+.comment-del {
+  position: absolute; top: 0; right: 0; color: var(--text-muted);
+  font-size: 16px; line-height: 1; padding: 2px 6px; cursor: pointer;
+}
+.comment-del:hover { color: var(--danger); }
+
+/* 안읽음 뱃지 */
+.icon-btn.badge-wrap { position: relative; }
+.nav-badge {
+  position: absolute; top: -4px; right: -6px; min-width: 16px; height: 16px;
+  padding: 0 4px; border-radius: 8px; background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700; align-items: center; justify-content: center;
+  display: none;
+}
+
+/* 프로필 편집 모달 */
+.modal.small { max-width: 420px; width: 92%; }
+.modal-body.col { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+.modal-body.col input {
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px;
+}
+.modal-body.col input:focus { border-color: var(--border-strong); }
+.profile-edit-avatar { display: flex; flex-direction: column; align-items: center; gap: 8px; }
