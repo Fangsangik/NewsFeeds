@@ -80,9 +80,10 @@ public class FriendServiceImpl implements FriendService {
         // Friend 엔터티를 가져옴
         Page<Friend> friends = friendRepository.findSenderInfo(member.getId(), pageable);
 
+        // 보낸 요청 목록에는 '요청을 받은 사람(receiver)'을 보여줘야 한다.
         return friends.map(friend -> new FriendSenderRequestDto(
-                friend.getSender().getName(),
-                friend.getSender().getEmail()
+                friend.getReceiver().getEmail(),
+                friend.getReceiver().getName()
         ));
     }
 
@@ -93,9 +94,10 @@ public class FriendServiceImpl implements FriendService {
         // Friend 엔터티를 가져옴
         Page<Friend> friends = friendRepository.findReceiverInfo(member.getId(), pageable);
 
+        // 받은 요청 목록에는 '요청을 보낸 사람(sender)'을 보여줘야 한다. (email, name 슬롯 순서 주의)
         return friends.map(friend -> new FriendRequestResponseDto(
-                friend.getReceiver().getName(),    // 요청 받은 사람 이름
-                friend.getReceiver().getEmail()    // 요청 받은 사람 이메일
+                friend.getSender().getEmail(),     // 요청 보낸 사람 이메일
+                friend.getSender().getName()       // 요청 보낸 사람 이름
         ));
     }
 
@@ -106,11 +108,13 @@ public class FriendServiceImpl implements FriendService {
         // Friend 엔터티를 가져옴
         Page<Friend> friends = friendRepository.findFriendList(member.getId(), pageable);
 
-        // 엔터티를 DTO로 변환
-        return friends.map(friend -> new FriendListDto(
-                friend.getId(),
-                friend.getSender().getName() // 필요한 경우 필드 맞춤 설정
-        ));
+        // 엔터티를 DTO로 변환 — 로그인 회원 기준 '상대방'의 memberId + 이름을 반환한다.
+        // (기존엔 Friend row PK와 항상 sender 이름을 반환해 DM이 엉뚱한 회원에게 가고 상대 이름이 틀렸다.)
+        Long meId = member.getId();
+        return friends.map(friend -> {
+            var peer = friend.getSender().getId().equals(meId) ? friend.getReceiver() : friend.getSender();
+            return new FriendListDto(peer.getId(), peer.getName());
+        });
     }
 
     @Transactional
