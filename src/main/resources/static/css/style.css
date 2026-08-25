@@ -739,3 +739,20 @@ input, textarea {
 }
 .search-input:focus { border-color: var(--border-strong); }
 .page-title { margin: 4px 2px 14px; font-size: 18px; }
+
+/* ---------- Round 2: 알림 + 제목/본문 구분 ---------- */
+.post-title { font-weight: 600; margin: 2px 0 3px; line-height: 1.3; }
+.detail .comment .post-title { margin-top: 2px; }
+
+.noti-list { display: flex; flex-direction: column; }
+.noti-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; text-align: left; cursor: pointer;
+  background: var(--surface); border: none; border-bottom: 1px solid var(--border);
+}
+.noti-row:hover { background: #fafafa; }
+.noti-row.unread { background: #f0f8ff; }
+.noti-icon { font-size: 20px; flex: 0 0 24px; text-align: center; }
+.noti-body { min-width: 0; }
+.noti-msg { font-size: 14px; }
+.noti-time { font-size: 12px; margin-top: 2px; }

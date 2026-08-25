@@ -110,10 +110,10 @@ function renderCard(item) {
     el("div", { class: "card-actions" }, [heart]),
     likeCountEl,
     el("div", { class: "card-body" }, [
-      item.title ? el("span", { class: "title" }, `${item.title} `) : null,
+      item.title ? el("div", { class: "post-title" }, item.title) : null,
       item.content
-        ? el("span", { class: "text" }, item.content)
-        : el("span", { class: "muted" }, item.title ? "" : "—"),
+        ? el("div", { class: "text" }, item.content)
+        : (item.title ? null : el("span", { class: "muted" }, "—")),
     ]),
     el("a", {
       class: "card-comments-link",

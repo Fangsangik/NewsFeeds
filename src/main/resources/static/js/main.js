@@ -5,6 +5,7 @@ import { renderDetail } from "./detail.js";
 import { renderProfile } from "./profile.js";
 import { renderDm, connectStomp, disconnectStomp } from "./dm.js";
 import { renderFriends } from "./friends.js";
+import { renderNotifications } from "./notifications.js";
 import { el } from "./ui.js";
 import { api } from "./api.js";
 
@@ -18,6 +19,16 @@ async function updateUnreadBadge(badge) {
     badge.textContent = n > 99 ? "99+" : String(n);
     badge.style.display = n > 0 ? "flex" : "none";
   } catch { /* 뱃지는 실패해도 조용히 무시 */ }
+}
+
+async function updateNotiBadge(badge) {
+  if (!auth.isLoggedIn) return;
+  try {
+    const data = await api.get("/notifications/unread-count");
+    const n = data?.count ?? 0;
+    badge.textContent = n > 99 ? "99+" : String(n);
+    badge.style.display = n > 0 ? "flex" : "none";
+  } catch { /* 무시 */ }
 }
 
 function buildTopbar() {
@@ -35,6 +46,12 @@ function buildTopbar() {
           const badge = el("span", { class: "nav-badge", style: { display: "none" } }, "");
           const btn = el("button", { class: "icon-btn badge-wrap", title: "메시지", onclick: () => { location.hash = "#/dm"; } }, ["💬", badge]);
           updateUnreadBadge(badge);
+          return btn;
+        })(),
+        (() => {
+          const badge = el("span", { class: "nav-badge", style: { display: "none" } }, "");
+          const btn = el("button", { class: "icon-btn badge-wrap", title: "알림", onclick: () => { location.hash = "#/notifications"; } }, ["🔔", badge]);
+          updateNotiBadge(badge);
           return btn;
         })(),
         el("button", { class: "icon-btn", title: "친구", onclick: () => { location.hash = "#/friends"; } }, "👥"),
@@ -81,6 +98,8 @@ function route() {
   if (hash === "#/friends" || hash.startsWith("#/friends/")) return renderFriends(root);
 
   if (hash === "#/saved") return renderSaved(root);
+
+  if (hash === "#/notifications") return renderNotifications(root);
 
   const searchMatch = hash.match(/^#\/search(?:\/(.*))?/);
   if (searchMatch) return renderSearch(root, searchMatch[1] ? decodeURIComponent(searchMatch[1]) : "");

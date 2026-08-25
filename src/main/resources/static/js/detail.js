@@ -56,8 +56,8 @@ function buildView(feedId, feed, likeData, comments) {
     avatar(authorName, "sm", author && author.image),
     el("div", {}, [
       el("span", { class: "name" }, authorName),
-      el("span", { class: "text" }, feed?.title ? `${feed.title} ` : ""),
-      el("span", { class: "text" }, feed?.content || ""),
+      feed?.title ? el("div", { class: "post-title" }, feed.title) : null,
+      feed?.content ? el("div", { class: "text" }, feed.content) : null,
     ]),
   ]);
   commentsBody.insertBefore(captionRow, commentsBody.firstChild);
