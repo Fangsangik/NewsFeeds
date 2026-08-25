@@ -58,6 +58,13 @@ public class FeedController {
         return ResponseEntity.ok(new CommonResponse<>("좋아요 수 기반 피드 조회 완료", feeds));
 
     }
+
+    @GetMapping("/latest")
+    public ResponseEntity<CommonResponse<Page<FeedWithLikeCountDto>>> getLatest(@RequestParam(defaultValue = "0") int page,
+                                                                                @RequestParam(defaultValue = "10") int size) {
+        Page<FeedWithLikeCountDto> feeds = feedService.getAllFeedsOrderByLatest(page, size);
+        return ResponseEntity.ok(new CommonResponse<>("최신순 피드 조회 완료", feeds));
+    }
     @PatchMapping("/{feedId}")
     public ResponseEntity<CommonResponse<FeedUpdateResponseDto>> updateFeed(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                                                             @PathVariable Long feedId,

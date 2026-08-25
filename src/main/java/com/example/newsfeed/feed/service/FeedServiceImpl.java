@@ -91,6 +91,11 @@ public class FeedServiceImpl implements FeedService {
         return feedRepository.findAllFeedsOrderByLikeCount(PageRequest.of(page, size));
     }
 
+    @Override
+    public Page<FeedWithLikeCountDto> getAllFeedsOrderByLatest(int page, int size) {
+        return feedRepository.findAllFeedsOrderByLatest(PageRequest.of(page, size));
+    }
+
     @Transactional
     @Override
     public FeedUpdateResponseDto updateFeed(Member member, Long feedId, FeedRequestDto feedRequestDto) {
