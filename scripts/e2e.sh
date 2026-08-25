@@ -8,7 +8,9 @@ BASE="${1:-http://localhost:8080}"
 TS=$(python3 -c 'import time;print(int(time.time()))')
 A_EMAIL="alice.${TS}@e.com"
 B_EMAIL="bob.${TS}@e.com"
-PW="Aa12345!"
+# Local-only test fixtures. Override via env for CI: E2E_PW / MYSQL_PW.
+PW="${E2E_PW:-Aa12345!}"
+MYSQL_PW="${MYSQL_PW:-1234}"
 PASS=0; FAIL=0
 declare -a FAILS=()
 
@@ -74,7 +76,7 @@ logout() { # silent best-effort
 # doesn't poison the test (the app's AuthService blocks any login
 # while ANY other user holds a token).
 db_truncate_tokens() {
-  docker compose exec -T mysql mysql -uroot -p1234 newsfeed -e "DELETE FROM jwt_token;" 2>/dev/null \
+  docker compose exec -T mysql mysql -uroot -p"$MYSQL_PW" newsfeed -e "DELETE FROM jwt_token;" 2>/dev/null \
     || echo "  (warn) could not clear jwt_token via docker exec"
 }
 
@@ -201,7 +203,7 @@ req "POST child-comment (alice)" "200" POST "/comments/child-comments" "$A_TOK" 
 
 req "DELETE feed"   "200|204" DELETE "/feeds/$FEED_ID" "$A_TOK" >/dev/null
 # FriendResponseDto doesn't expose the Friend PK; look it up directly.
-FRIEND_PK=$(docker compose exec -T mysql mysql -uroot -p1234 newsfeed -N -e \
+FRIEND_PK=$(docker compose exec -T mysql mysql -uroot -p"$MYSQL_PW" newsfeed -N -e \
   "SELECT id FROM friend WHERE sender_id=$A_ID AND receiver_id=$B_ID ORDER BY id DESC LIMIT 1;" 2>/dev/null | tail -1)
 echo "  (friend pk resolved=$FRIEND_PK)" >&2
 req "alice deletes friendship" "200|204" DELETE "/friends/${FRIEND_PK:-0}" "$A_TOK" >/dev/null
