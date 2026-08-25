@@ -8,6 +8,8 @@ import com.example.newsfeed.like.dto.LikeResponseDto;
 import com.example.newsfeed.like.entity.Like;
 import com.example.newsfeed.like.repository.LikeRepository;
 import com.example.newsfeed.member.repository.MemberRepository;
+import com.example.newsfeed.notification.entity.Notification;
+import com.example.newsfeed.notification.service.NotificationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,11 +23,14 @@ public class LikeServiceImpl implements LikeService {
     private final LikeRepository likeRepository;
     private final FeedRepository feedRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
-    public LikeServiceImpl(LikeRepository likeRepository, FeedRepository feedRepository, MemberRepository memberRepository) {
+    public LikeServiceImpl(LikeRepository likeRepository, FeedRepository feedRepository,
+                           MemberRepository memberRepository, NotificationService notificationService) {
         this.likeRepository = likeRepository;
         this.feedRepository = feedRepository;
         this.memberRepository = memberRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -40,6 +45,10 @@ public class LikeServiceImpl implements LikeService {
                     .member(memberRepository.getReferenceById(memberId))
                     .likeCount(1)
                     .build());
+            // 게시물 작성자에게 좋아요 알림 (본인 글 좋아요는 service에서 무시)
+            String actorName = memberRepository.findById(memberId).map(m -> m.getName()).orElse("사용자");
+            notificationService.notify(feed.getMember().getId(), Notification.Type.LIKE, memberId, actorName,
+                    feedId, actorName + "님이 회원님의 게시물을 좋아합니다.");
         }
         return LikeResponseDto.of(feedId, likeRepository.countByFeedId(feedId), true);
     }

@@ -26,10 +26,13 @@ public class FriendServiceImpl implements FriendService {
 
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
+    private final com.example.newsfeed.notification.service.NotificationService notificationService;
 
-    public FriendServiceImpl(FriendRepository friendRepository, MemberRepository memberRepository) {
+    public FriendServiceImpl(FriendRepository friendRepository, MemberRepository memberRepository,
+                             com.example.newsfeed.notification.service.NotificationService notificationService) {
         this.friendRepository = friendRepository;
         this.memberRepository = memberRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -51,8 +54,14 @@ public class FriendServiceImpl implements FriendService {
                 .receiver(receiver)
                 .status(FriendRequestStatus.REQUESTED)
                 .build();
+        FriendResponseDto dto = FriendResponseDto.toDto(friendRepository.save(friend));
 
-        return FriendResponseDto.toDto(friendRepository.save(friend));
+        // 요청 받은 사람에게 친구요청 알림
+        notificationService.notify(receiver.getId(),
+                com.example.newsfeed.notification.entity.Notification.Type.FRIEND_REQUEST,
+                sender.getId(), sender.getName(), null,
+                sender.getName() + "님이 친구 요청을 보냈습니다.");
+        return dto;
     }
 
     @Transactional
@@ -68,6 +77,12 @@ public class FriendServiceImpl implements FriendService {
         friend.setStatus(FriendRequestStatus.ACCEPTED);
 
         friendRepository.save(friend);
+
+        // 요청 보낸 사람에게 수락 알림 (수락자 = receiver = 나)
+        notificationService.notify(friend.getSender().getId(),
+                com.example.newsfeed.notification.entity.Notification.Type.FRIEND_ACCEPT,
+                friend.getReceiver().getId(), friend.getReceiver().getName(), null,
+                friend.getReceiver().getName() + "님이 친구 요청을 수락했습니다.");
 
         return FriendResponseDto.toDto(friend);
     }
