@@ -1,6 +1,7 @@
 package com.example.newsfeed.auth.config;
 
 import com.example.newsfeed.auth.jwt.filter.JwtFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,6 +53,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
+            // 토큰이 없거나 만료/무효면 401을 반환한다. (기본값은 403이라 프런트의
+            // 401→refresh 자동 재발급 흐름이 동작하지 않고 '요청 실패'로 끝나던 문제)
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(
+                (req, res, e) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .authorizeHttpRequests(auth -> auth
