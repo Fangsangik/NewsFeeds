@@ -58,17 +58,17 @@ function buildHeader(name, count, isMe) {
 
 function buildGrid(feeds, memberId) {
   const cells = feeds.map((f, i) => {
-    // Feed list endpoint returns FeedResponseDto with no id field — derive a hash route from index instead.
     const cell = el("div", { class: "grid-cell" }, [
       f.image
         ? el("img", { src: f.image, alt: f.title || "" })
         : el("div", { class: "grid-cell-placeholder" }, "📷"),
       el("div", { class: "grid-cell-overlay" }, f.title || ""),
     ]);
-    // We don't have feedId here (DTO limitation); the home feed list has it.
-    // For now clicking shows the title via toast; HANDOFF item 5 will expose feedId.
+    // FeedResponseDto가 feedId를 포함하므로 클릭 시 상세로 이동한다.
+    cell.style.cursor = "pointer";
     cell.addEventListener("click", () => {
-      toast(f.title || `게시물 #${i + 1}`);
+      if (f.feedId != null) location.hash = `#/feed/${f.feedId}`;
+      else toast(f.title || `게시물 #${i + 1}`);
     });
     return cell;
   });
