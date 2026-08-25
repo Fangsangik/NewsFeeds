@@ -21,9 +21,9 @@
 
 ## 🟢 제품 확장 (HANDOFF.md의 MEDIUM/LOW, 데모 풍부하게)
 
-- [ ] 프로필 화면 `#/profile/:memberId` (인스타식 3×N 그리드)
-- [ ] 친구 화면 `#/friends` (보낸/받은/목록 3탭 + 수락)
-- [ ] DM 화면 `#/dm` (SockJS+STOMP, 백엔드 핸드셰이크 이미 완비)
+- [x] 프로필 화면 `#/profile/:memberId` (게시물 그리드) — 2026-08-25
+- [x] 친구 화면 `#/friends` (받은/보낸/목록/친구찾기 4탭 + 수락) — 2026-08-25
+- [x] DM 화면 `#/dm` (STOMP, 친구 기반 대화) — 2026-08-25
 - [ ] 카카오 로그인 버튼 (백엔드 완비)
 - [ ] 아바타 이미지 렌더(`Member.image`), favicon 추가
 - [ ] 이미지 업로드 리사이즈(1080px 이내)
@@ -34,6 +34,13 @@
 - [ ] `Friend*`/`Kakao*` 컨트롤러 응답을 `CommonResponse`로 통일 (프런트 언래핑 정합)
 - [ ] `@ExceptionHandler(Exception.class)` catch-all 세분화 (5xx를 400으로 가리는 문제)
 - [ ] (선택) 클라우드 배포로 라이브 URL — 현재는 스코프 밖(docker compose 재현성으로 대체)
+
+## ✅ 2026-08-25 완료
+
+- 2계정(Alice/Bob) 브라우저 E2E 검증 → 버그 10건(B1~B10) 수정·재검증 (TROUBLESHOOTING.md 참고)
+- 게시 위치 선택화, 프로필 피드 복구, 친구/DM 상대 정보 정정(DM 실제 전달), 댓글 실명+대댓글 UI
+- UI: 상세 6:4 비율, DM 헤더 겹침·시간대(9h) 수정
+- README 기술 스택/기능 현행화 (실시간 DM=인메모리 SimpleBroker, Redis 실제 범위 명시)
 
 ## ✅ 2026-07-29 완료
 
