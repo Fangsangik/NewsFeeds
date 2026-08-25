@@ -18,8 +18,8 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     @Query("SELECT f FROM Feed f WHERE f.member.id = :memberId")
     List<Feed> findFeedsByMemberId(@Param("memberId") Long memberId);
 
-    @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, COALESCE(SUM(l.likeCount), 0L)) " +
-            "FROM Feed f LEFT JOIN f.likes l GROUP BY f.id, f.title, f.content, f.image ORDER BY COALESCE(SUM(l.likeCount), 0L) DESC")
+    @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, f.member.id, f.member.name, COALESCE(SUM(l.likeCount), 0L)) " +
+            "FROM Feed f LEFT JOIN f.likes l GROUP BY f.id, f.title, f.content, f.image, f.member.id, f.member.name ORDER BY COALESCE(SUM(l.likeCount), 0L) DESC")
     Page<FeedWithLikeCountDto> findAllFeedsOrderByLikeCount(Pageable pageable);
 
     default Feed findByIdOrElseThrow(Long id) {

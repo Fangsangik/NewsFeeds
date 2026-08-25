@@ -73,22 +73,23 @@ function renderCard(item) {
   image.addEventListener("click", () => { location.hash = `#/feed/${feedId}`; });
   image.style.cursor = "pointer";
 
-  const nick = `user${item.feedId}`;
+  const authorName = item.authorName || `user${item.authorId ?? ""}`;
 
   return el("article", { class: "card" }, [
     el("header", { class: "card-head" }, [
-      avatar(nick),
+      avatar(authorName),
       el("div", { class: "user-meta" }, [
-        el("div", { class: "name" }, item.title || "게시물"),
+        el("div", { class: "name" }, authorName),
       ]),
     ]),
     image,
     el("div", { class: "card-actions" }, [heart]),
     likeCountEl,
     el("div", { class: "card-body" }, [
+      item.title ? el("span", { class: "title" }, `${item.title} `) : null,
       item.content
         ? el("span", { class: "text" }, item.content)
-        : el("span", { class: "muted" }, "—"),
+        : el("span", { class: "muted" }, item.title ? "" : "—"),
     ]),
     el("a", {
       class: "card-comments-link",
