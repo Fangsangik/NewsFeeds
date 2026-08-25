@@ -30,7 +30,7 @@ export async function renderProfile(root, memberId) {
   root.innerHTML = "";
   root.appendChild(
     el("div", {}, [
-      buildHeader(displayName, list.length, isMe),
+      buildHeader(displayName, list.length, isMe, member && member.image),
       list.length === 0
         ? el("div", { class: "empty", style: { marginTop: "20px" } }, "아직 게시물이 없어요.")
         : buildGrid(list, memberId),
@@ -38,12 +38,12 @@ export async function renderProfile(root, memberId) {
   );
 }
 
-function buildHeader(name, count, isMe) {
+function buildHeader(name, count, isMe, image) {
   const actions = isMe
     ? [el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/"; } }, "홈으로")]
     : [];
   return el("section", { class: "profile-head" }, [
-    el("div", { class: "profile-avatar" }, avatar(name, "lg")),
+    el("div", { class: "profile-avatar" }, avatar(name, "lg", image)),
     el("div", { class: "profile-meta" }, [
       el("div", { class: "profile-name-row" }, [
         el("span", { class: "profile-name" }, name),

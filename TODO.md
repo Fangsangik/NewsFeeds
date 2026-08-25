@@ -25,14 +25,14 @@
 - [x] 친구 화면 `#/friends` (받은/보낸/목록/친구찾기 4탭 + 수락) — 2026-08-25
 - [x] DM 화면 `#/dm` (STOMP, 친구 기반 대화) — 2026-08-25
 - [x] 카카오 로그인 버튼 + authorize/callback 코드 플로우 — 2026-08-25 (동작엔 카카오 콘솔에 `http://localhost:8080/callback` redirect URI 등록 필요)
-- [ ] 아바타 이미지 렌더(`Member.image`), favicon 추가
-- [ ] 이미지 업로드 리사이즈(1080px 이내)
+- [x] 아바타 이미지 렌더(`Member.image`) + favicon(📷) — 2026-08-25
+- [x] 이미지 업로드 리사이즈(1080px, 클라이언트 캔버스) — 2026-08-25
 
 ## ⚪ 품질/CI (여유 될 때)
 
 - [ ] JUnit 통합테스트 + Testcontainers(MySQL/Redis)로 e2e.sh 대체 → CI 연동
 - [ ] `Friend*`/`Kakao*` 컨트롤러 응답을 `CommonResponse`로 통일 (프런트 언래핑 정합)
-- [ ] `@ExceptionHandler(Exception.class)` catch-all 세분화 (5xx를 400으로 가리는 문제)
+- [x] `@ExceptionHandler(Exception.class)` catch-all 세분화 — IllegalArgument/State=400, 그외=500 — 2026-08-25
 - [ ] (선택) 클라우드 배포로 라이브 URL — 현재는 스코프 밖(docker compose 재현성으로 대체)
 
 ## ✅ 2026-08-25 완료

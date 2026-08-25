@@ -78,10 +78,35 @@ export const api = {
   del: (path, opts) => request("DELETE", path, opts),
 
   async uploadImage(file) {
+    // 업로드 전 최대 1080px로 축소해 대용량 원본 전송을 막는다. 실패하면 원본 그대로.
+    const blob = await resizeImage(file, 1080).catch(() => file);
+    const name = blob === file ? file.name : file.name.replace(/\.\w+$/, "") + ".jpg";
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", blob, name);
     return request("POST", "/files/image", { body: fd, isForm: true });
   },
 };
+
+// 캔버스로 이미지를 maxDim 이내로 축소한 Blob 반환. 이미 작거나 비이미지면 원본 반환.
+function resizeImage(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    if (!file.type?.startsWith("image/") || file.type === "image/gif") return resolve(file);
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { width, height } = img;
+      if (Math.max(width, height) <= maxDim) return resolve(file);
+      const scale = maxDim / Math.max(width, height);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(b => (b ? resolve(b) : reject(new Error("resize failed"))), "image/jpeg", 0.9);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("image load failed")); };
+    img.src = url;
+  });
+}
 
 export { ApiError };

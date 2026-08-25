@@ -19,11 +19,13 @@ export function el(tag, attrs = {}, children = []) {
   return node;
 }
 
-export function avatar(seed, size = "sm") {
+export function avatar(seed, size = "sm", imageUrl = null) {
+  const cls = `avatar ${size === "lg" ? "lg" : ""}`;
+  if (imageUrl) {
+    return el("div", { class: cls }, el("img", { src: imageUrl, alt: seed || "" }));
+  }
   const initial = (seed || "?").trim().charAt(0).toUpperCase();
-  return el("div", { class: `avatar ${size === "lg" ? "lg" : ""}` },
-    el("div", {}, initial)
-  );
+  return el("div", { class: cls }, el("div", {}, initial));
 }
 
 export function toast(message, timeoutMs = 2200) {

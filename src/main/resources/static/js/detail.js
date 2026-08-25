@@ -49,7 +49,7 @@ function buildView(feedId, feed, likeData, comments) {
   renderComments(commentsBody, comments, feedId, refresh);
 
   const captionRow = el("div", { class: "comment" }, [
-    avatar(authorName),
+    avatar(authorName, "sm", author && author.image),
     el("div", {}, [
       el("span", { class: "name" }, authorName),
       el("span", { class: "text" }, feed?.title ? `${feed.title} ` : ""),
@@ -95,7 +95,7 @@ function buildView(feedId, feed, likeData, comments) {
     ),
     el("div", { class: "side" }, [
       el("div", { class: "side-head" }, [
-        avatar(authorName),
+        avatar(authorName, "sm", author && author.image),
         el("div", { class: "user-meta" }, [
           el("div", { class: "name" }, authorName),
           feed?.address ? el("div", { class: "sub" }, feed.address) : null,
