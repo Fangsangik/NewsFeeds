@@ -8,7 +8,8 @@ const incomingHandlers = new Set();
 
 export function connectStomp() {
   if (!auth.isLoggedIn) return;
-  if (stompClient && stompClient.active) return;
+  // 클라이언트가 이미 있으면(연결 중 포함) 재생성하지 않는다 — 중복 구독/중복 수신 방지.
+  if (stompClient) return;
   if (typeof StompJs === "undefined") {
     console.warn("StompJs lib not loaded");
     return;
@@ -176,12 +177,13 @@ async function renderConversation(root, peerId) {
   root.innerHTML = "";
   const list = el("div", { class: "dm-thread" });
   const input = el("input", { type: "text", placeholder: "메시지 보내기...", onkeydown: (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    // e.isComposing: 한글 IME 조합 확정 Enter를 무시(안 하면 전송이 2번 발생).
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
   }});
   const sendBtn = el("button", { class: "btn-primary dm-send", onclick: send }, "보내기");
 
   const messages = (page?.content ?? []);
-  messages.forEach(m => list.appendChild(messageRow(m)));
+  messages.forEach(m => appendMessage(list, m));
   setTimeout(() => list.scrollTo({ top: list.scrollHeight }), 0);
 
   // 상대가 보낸 안 읽은 메시지를 읽음 처리 (안읽음 뱃지 정리)
@@ -192,8 +194,7 @@ async function renderConversation(root, peerId) {
   // Subscribe to live pushes for this peer
   const unsub = onIncoming((m) => {
     if (Number(m.senderId) === Number(peerId) || Number(m.receiverId) === Number(peerId)) {
-      list.appendChild(messageRow(m));
-      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+      if (appendMessage(list, m)) list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
     } else {
       toast(`💬 새 메시지 (user${m.senderId})`);
     }
@@ -209,7 +210,7 @@ async function renderConversation(root, peerId) {
     try {
       const dto = await api.post("/messages", { receiverId: Number(peerId), content: text });
       input.value = "";
-      list.appendChild(messageRow(dto));
+      appendMessage(list, dto);
       list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
     } catch (e) {
       toast(e.message || "전송 실패");
@@ -237,8 +238,17 @@ async function renderConversation(root, peerId) {
 function messageRow(m) {
   const me = Number(auth.meId);
   const mine = Number(m.senderId) === me;
-  return el("div", { class: `dm-msg ${mine ? "mine" : "theirs"}` }, [
+  const node = el("div", { class: `dm-msg ${mine ? "mine" : "theirs"}` }, [
     el("div", { class: "dm-bubble" }, m.message || ""),
     el("div", { class: "dm-time muted" }, fmtTimeAgo(m.createdAt) || ""),
   ]);
+  if (m.id != null) node.dataset.mid = String(m.id);
+  return node;
+}
+
+// 같은 메시지 id가 이미 있으면 추가하지 않는다 (로컬 append + STOMP 수신 중복 방지).
+function appendMessage(list, m) {
+  if (m && m.id != null && list.querySelector(`[data-mid="${m.id}"]`)) return false;
+  list.appendChild(messageRow(m));
+  return true;
 }

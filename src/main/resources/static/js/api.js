@@ -32,7 +32,23 @@ async function tryRefresh() {
   }
 }
 
+// access token의 exp를 디코드해 만료 여부 판단 (선제 갱신용)
+function isAccessTokenExpired() {
+  const t = auth.accessToken;
+  if (!t) return false;
+  try {
+    const p = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return !p.exp || p.exp * 1000 <= Date.now();
+  } catch { return false; }
+}
+
 async function request(method, path, { body, isForm = false, auth: needAuth = true } = {}) {
+  // 토큰이 이미 만료됐다면 요청 전에 한 번만 갱신한다.
+  // (안 하면 첫 요청이 401을 받고 재시도되어 동일 요청이 2번 나가는 것처럼 보인다.)
+  if (needAuth && auth.accessToken && isAccessTokenExpired()) {
+    await tryRefresh();
+  }
+
   const headers = {};
   if (!isForm && body !== undefined) headers["Content-Type"] = "application/json";
   if (needAuth && auth.accessToken) headers["Authorization"] = `Bearer ${auth.accessToken}`;

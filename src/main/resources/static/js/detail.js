@@ -1,6 +1,6 @@
 import { api } from "./api.js";
 import { auth, likes } from "./store.js";
-import { el, avatar, toast } from "./ui.js";
+import { el, avatar, toast, linkify } from "./ui.js";
 
 export async function renderDetail(root, feedId) {
   root.innerHTML = "";
@@ -57,13 +57,13 @@ function buildView(feedId, feed, likeData, comments) {
     el("div", {}, [
       el("span", { class: "name" }, authorName),
       feed?.title ? el("div", { class: "post-title" }, feed.title) : null,
-      feed?.content ? el("div", { class: "text" }, feed.content) : null,
+      feed?.content ? el("div", { class: "text" }, linkify(feed.content)) : null,
     ]),
   ]);
   commentsBody.insertBefore(captionRow, commentsBody.firstChild);
 
   const commentInput = el("input", { placeholder: "댓글 달기...", onkeydown: (e) => {
-    if (e.key === "Enter") submit();
+    if (e.key === "Enter" && !e.isComposing) submit();
   }});
   const submitBtn = el("button", { disabled: true, onclick: submit }, "게시");
   commentInput.addEventListener("input", () => {
@@ -178,7 +178,7 @@ function commentRow(c, isChild, feedId, refresh) {
   const who = c.authorName || `user${c.authorId ?? ""}`;
   const meta = el("div", {}, [
     el("span", { class: "name" }, who),
-    el("span", { class: "text" }, c.content || ""),
+    el("span", { class: "text" }, linkify(c.content || "")),
   ]);
   const row = el("div", { class: `comment ${isChild ? "child" : ""}` }, [avatar(who), meta]);
 
@@ -200,7 +200,7 @@ function commentRow(c, isChild, feedId, refresh) {
 
     function toggle() {
       if (box) { box.remove(); box = null; return; }
-      const input = el("input", { class: "reply-input", placeholder: "답글 달기...", onkeydown: (e) => { if (e.key === "Enter") post(); } });
+      const input = el("input", { class: "reply-input", placeholder: "답글 달기...", onkeydown: (e) => { if (e.key === "Enter" && !e.isComposing) post(); } });
       const btn = el("button", { class: "reply-send", onclick: post }, "게시");
       box = el("div", { class: "reply-box" }, [input, btn]);
       meta.appendChild(box);
