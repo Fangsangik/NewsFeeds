@@ -16,18 +16,20 @@ public class FeedResponseDto {
     private String title;
     private String content;
     private String image;
+    private List<String> images;
     private String address;
     private AuthorDto author;
     private List<CommentResponseDto> comments;
     private List<LikeResponseDto> likes;
 
     @Builder
-    public FeedResponseDto(Long feedId, String title, String content, String image, String address,
+    public FeedResponseDto(Long feedId, String title, String content, String image, List<String> images, String address,
                            AuthorDto author, List<CommentResponseDto> comments, List<LikeResponseDto> likes) {
         this.feedId = feedId;
         this.title = title;
         this.content = content;
         this.image = image;
+        this.images = images;
         this.address = address;
         this.author = author;
         this.comments = comments;
@@ -71,6 +73,7 @@ public class FeedResponseDto {
                 .title(feed.getTitle())
                 .content(feed.getContent())
                 .image(feed.getImage())
+                .images(feed.getImages())
                 .address(feed.getAddress())
                 .author(AuthorDto.from(feed.getMember()))
                 .comments(comments)

@@ -39,7 +39,14 @@ public class Feed extends BaseEntity {
     @OneToMany(mappedBy = "feed", cascade = CascadeType.ALL)
     private List<Like> likes = new ArrayList<>();
 
-    private String image;
+    private String image; // 대표(커버) 이미지 = images 첫 장. 기존 단일 이미지 소비처 호환용.
+
+    @ElementCollection
+    @CollectionTable(name = "feed_images", joinColumns = @JoinColumn(name = "feed_id"))
+    @Column(name = "url", length = 512)
+    @OrderColumn(name = "sort_order")
+    private List<String> images = new ArrayList<>();
+
     private String address;
     private Double latitude;
     private Double longitude;
@@ -48,13 +55,14 @@ public class Feed extends BaseEntity {
     }
 
     @Builder
-    public Feed(String title, String content, Member member, List<Comment> comments, List<Like> likes, String image, String address, Double latitude, Double longitude) {
+    public Feed(String title, String content, Member member, List<Comment> comments, List<Like> likes, String image, List<String> images, String address, Double latitude, Double longitude) {
         this.title = title;
         this.content = content;
         this.member = member;
         this.comments = comments;
         this.likes = likes;
         this.image = image;
+        this.images = images != null ? images : new ArrayList<>();
         this.address = address;
         this.latitude = latitude;
         this.longitude = longitude;
