@@ -1,12 +1,21 @@
 package com.example.newsfeed.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionController {
 
@@ -40,17 +49,49 @@ public class GlobalExceptionController {
 
     @ExceptionHandler
     public ResponseEntity<String> constrainViolationException(ConstraintViolationException e) {
+        log.warn("ConstraintViolation: {}", e.getMessage());
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler
-    public ResponseEntity<String> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
-        return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
+
+        // Keep only the first message per field so the client can show it inline.
+        Map<String, String> perField = fieldErrors.stream().collect(Collectors.toMap(
+                FieldError::getField,
+                fe -> {
+                    String m = fe.getDefaultMessage();
+                    return m == null ? "유효하지 않은 값입니다." : m;
+                },
+                (first, second) -> first,
+                LinkedHashMap::new
+        ));
+
+        String message = perField.values().stream().findFirst().orElseGet(() ->
+                e.getBindingResult().getAllErrors().stream()
+                        .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                        .findFirst().orElse("입력 값이 유효하지 않습니다."));
+
+        log.warn("Validation failed: {} | fields={}", message, perField);
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("message", message);
+        body.put("fieldErrors", perField);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> constraintViolationException(Exception e) {
+    // 비즈니스 검증용으로 서비스에서 던지는 IllegalArgument/IllegalState는 클라이언트 오류(400).
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<String> illegalArgumentException(RuntimeException e) {
+        log.warn("Bad request: {}", e.getMessage());
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // 그 외 미처리 예외는 실제 서버 오류(500) — 400으로 가리지 않는다. 내부 메시지는 노출하지 않음.
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> unhandledException(Exception e) {
+        log.error("Unhandled exception → 500", e);
+        return new ResponseEntity<>("서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

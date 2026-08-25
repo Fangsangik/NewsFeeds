@@ -2,6 +2,8 @@ package com.example.newsfeed.util;
 
 import com.example.newsfeed.auth.jwt.service.UserDetailsImpl;
 import com.example.newsfeed.member.entity.Member;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 /**
@@ -14,5 +16,22 @@ public class AuthenticatedMemberUtil {
 
     public static Member getMember(UserDetails userDetails) {
         return ((UserDetailsImpl) userDetails).getMember();
+    }
+
+    public static Long getAuthenticatedMemberId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null || !(auth.getPrincipal() instanceof UserDetailsImpl)) {
+            throw new IllegalStateException("인증된 사용자가 없습니다.");
+        }
+        return ((UserDetailsImpl) auth.getPrincipal()).getMemberId();
+    }
+
+    /** 인증이 없으면 예외 대신 null을 반환한다. (좋아요 여부처럼 비로그인도 허용하는 조회용) */
+    public static Long getAuthenticatedMemberIdOrNull() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof UserDetailsImpl principal)) {
+            return null;
+        }
+        return principal.getMemberId();
     }
 }

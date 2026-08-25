@@ -2,12 +2,15 @@ package com.example.newsfeed.member.controller;
 
 import com.example.newsfeed.kakao.service.KakaoService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.util.Map;
 
 @Slf4j
@@ -18,6 +21,17 @@ public class KakaoAuthController {
 
     public KakaoAuthController(KakaoService kakaoService) {
         this.kakaoService = kakaoService;
+    }
+
+    /**
+     * '카카오로 로그인' 버튼 진입점 — 카카오 인가 페이지로 302 리다이렉트.
+     * 사용자가 동의하면 카카오가 redirect_uri(/callback)로 code를 돌려준다.
+     */
+    @GetMapping("/authorize")
+    public ResponseEntity<Void> authorize() {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(kakaoService.getAuthorizeUrl()))
+                .build();
     }
 
     /**

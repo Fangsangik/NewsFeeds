@@ -1,17 +1,15 @@
 package com.example.newsfeed.auth.jwt.service;
 
 import com.example.newsfeed.member.entity.Member;
-import lombok.Getter;
+import com.example.newsfeed.member.type.Role;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 @Slf4j
-@Getter
 public class UserDetailsImpl implements UserDetails {
 
     private final Member member;
@@ -21,10 +19,16 @@ public class UserDetailsImpl implements UserDetails {
         this.member = member;
     }
 
+    public Member getMember() {
+        return this.member;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + member.getRole()));
+        Role role = this.member.getRole();
+        log.info("사용자 권한 : {}", role.getAuthorities());
+
+        return new ArrayList<>(role.getAuthorities());
     }
 
     /**
@@ -38,6 +42,10 @@ public class UserDetailsImpl implements UserDetails {
 
     public Long getMemberId() {
         return this.member.getId();
+    }
+
+    public String getEmail() {
+        return this.member.getEmail();
     }
 
     /**

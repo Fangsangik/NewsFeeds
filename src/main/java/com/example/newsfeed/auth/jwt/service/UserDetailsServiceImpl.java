@@ -20,14 +20,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     /**
      * 입력받은 이메일에 해당하는 사용자 정보를 찾아 리턴
-     * @param email
+     * @param username
      * @return
      * @throws UsernameNotFoundException
      */
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다." + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Member member = memberRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다." + username));
 
         log.info("사용자 정보 : {}", member);
         return new UserDetailsImpl(member);

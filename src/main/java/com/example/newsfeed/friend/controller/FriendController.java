@@ -75,4 +75,21 @@ public class FriendController {
         friendService.deleteFriend(member, friendId);
         return ResponseEntity.noContent().build();
     }
+
+    // 특정 회원과의 관계 상태 (self|friends|requested_by_me|requested_to_me|none)
+    @GetMapping("/status/{memberId}")
+    public ResponseEntity<java.util.Map<String, String>> statusWith(@AuthenticationPrincipal UserDetailsImpl userDetails,
+                                                                    @PathVariable Long memberId) {
+        Member me = AuthenticatedMemberUtil.getMember(userDetails);
+        return ResponseEntity.ok(java.util.Map.of("status", friendService.statusWith(me.getId(), memberId)));
+    }
+
+    // 회원 기준 친구 관계 해제(방향 무관)
+    @DeleteMapping("/by-member/{memberId}")
+    public ResponseEntity<Void> deleteByMember(@AuthenticationPrincipal UserDetailsImpl userDetails,
+                                               @PathVariable Long memberId) {
+        Member me = AuthenticatedMemberUtil.getMember(userDetails);
+        friendService.deleteBetween(me.getId(), memberId);
+        return ResponseEntity.noContent().build();
+    }
 }

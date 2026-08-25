@@ -1,0 +1,697 @@
+{
+  "uid": "newsfeed-backend",
+  "title": "Newsfeed Backend (CPU/Thread/JVM/HTTP)",
+  "tags": [
+    "newsfeed",
+    "spring-boot"
+  ],
+  "schemaVersion": 38,
+  "version": 3,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m"
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Process CPU %",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\")*100 FROM \"process_cpu_usage\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "System CPU %",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\")*100 FROM \"system_cpu_usage\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "JVM Live Threads",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "red",
+                "value": 400
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"jvm_threads_live\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Heap Used (MB)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 512
+              },
+              {
+                "color": "red",
+                "value": 900
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "graphMode": "area",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT sum(\"value\")/1024/1024 FROM \"jvm_memory_used\" WHERE \"area\"='heap' AND $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "CPU Usage (over time)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "process_cpu",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\")*100 FROM \"process_cpu_usage\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "B",
+          "alias": "system_cpu",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\")*100 FROM \"system_cpu_usage\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "JVM Threads (live / daemon / peak)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "live",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"jvm_threads_live\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "B",
+          "alias": "daemon",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"jvm_threads_daemon\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "C",
+          "alias": "peak",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"jvm_threads_peak\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "JVM Heap by region (MB)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "$tag_id",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\")/1024/1024 FROM \"jvm_memory_used\" WHERE \"area\"='heap' AND $timeFilter GROUP BY time($__interval), \"id\" fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "GC Pause (ms total)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "$tag_cause",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"sum\") FROM \"jvm_gc_pause\" WHERE $timeFilter GROUP BY time($__interval), \"cause\" fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "HTTP Requests (TPS) by URI",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "$tag_uri",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT non_negative_derivative(mean(\"count\"), 1s) FROM \"http_server_requests\" WHERE $timeFilter GROUP BY time($__interval), \"uri\" fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "HTTP Latency (max / mean) by URI",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "$tag_uri max",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"upper\") FROM \"http_server_requests\" WHERE $timeFilter GROUP BY time($__interval), \"uri\" fill(none)"
+        },
+        {
+          "refId": "B",
+          "alias": "$tag_uri mean",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"mean\") FROM \"http_server_requests\" WHERE $timeFilter GROUP BY time($__interval), \"uri\" fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "HikariCP Connections",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "active",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"hikaricp_connections_active\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "B",
+          "alias": "idle",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"hikaricp_connections_idle\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "C",
+          "alias": "pending",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"hikaricp_connections_pending\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "D",
+          "alias": "max",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"hikaricp_connections_max\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "Tomcat Sessions",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "nf-influx-springboot"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 3
+          }
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "active",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"tomcat_sessions_active_current\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        },
+        {
+          "refId": "B",
+          "alias": "max",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "nf-influx-springboot"
+          },
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "query": "SELECT mean(\"value\") FROM \"tomcat_sessions_active_max\" WHERE $timeFilter GROUP BY time($__interval) fill(none)"
+        }
+      ]
+    }
+  ]
+}

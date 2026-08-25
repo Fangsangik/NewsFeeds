@@ -28,6 +28,10 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     @Query("select f from Friend f JOIN FETCH f.sender s where f.sender.id = :senderId and f.receiver.id = :receiverId")
     Optional<Friend> findBySenderAndReceiver(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
 
+    // 두 회원 사이의 관계(방향 무관). 중복 행이 있을 수 있어 List로 반환.
+    @Query("select f from Friend f where (f.sender.id = :a and f.receiver.id = :b) or (f.sender.id = :b and f.receiver.id = :a)")
+    java.util.List<Friend> findBetween(@Param("a") Long a, @Param("b") Long b);
+
     default Friend findByIdOrElseThrow(Long friendId) {
         return findById(friendId).orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_FRIEND_REQUEST));
     }

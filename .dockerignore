@@ -1,0 +1,13 @@
+.git
+.idea
+.gradle
+build
+out
+*.iml
+node_modules
+uploads
+.env
+.env.*
+HELP.md
+TROUBLESHOOTING.md
+README.md

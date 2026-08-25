@@ -1,36 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>STOMP WebSocket 테스트</title>
-    <!-- SockJS 및 STOMP 라이브러리 추가 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Newsfeed</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <!-- STOMP over raw WebSocket for DM (no SockJS — token must stay in the URL). -->
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 </head>
 <body>
-<h1>WebSocket STOMP 테스트</h1>
-<button onclick="sendMessage()">메시지 보내기</button>
-<script>
-    // SockJS WebSocket 연결
-    const socket = new SockJS('http://localhost:80/ws');
-    const stompClient = Stomp.over(socket);
-
-    stompClient.connect({}, function (frame) {
-        console.log('✅ WebSocket 연결 성공:', frame);
-
-        stompClient.subscribe('/topic/public', function (message) {
-            console.log('📩 수신된 메시지:', JSON.parse(message.body));
-        });
-    });
-
-    function sendMessage() {
-        const message = {
-            content: "테스트 메시지 from HTML",
-            memberId: 99
-        };
-        stompClient.send('/app/chat.sendMessage', {}, JSON.stringify(message));
-        console.log('📤 메시지 전송:', message);
-    }
-</script>
+  <header class="topbar" id="topbar"></header>
+  <main class="app" id="app"></main>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

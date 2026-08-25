@@ -1,0 +1,28 @@
+apiVersion: 1
+
+deleteDatasources:
+  - name: InfluxDB-jmeter
+  - name: InfluxDB-springboot
+
+datasources:
+  - name: InfluxDB-jmeter
+    uid: nf-influx-jmeter
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: jmeter
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMode: GET
+
+  - name: InfluxDB-springboot
+    uid: nf-influx-springboot
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: springboot
+    isDefault: false
+    editable: true
+    jsonData:
+      httpMode: GET

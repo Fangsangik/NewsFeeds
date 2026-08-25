@@ -45,25 +45,21 @@ public class FeedServiceImpl implements FeedService {
         Double latitude = feedRequestDto.getLatitude();
         Double longitude = feedRequestDto.getLongitude();
 
-        // 주소가 없는 경우, 위도/경도를 통해 주소를 얻음
-        if (address == null && latitude != null && longitude != null) {
-            address = kakaoGeocodingService.getAddress(latitude, longitude);
-        }
+        boolean hasAddress = address != null && !address.isBlank();
+        boolean hasCoords = latitude != null && longitude != null;
 
-        // 좌표가 없는 경우, 주소를 통해 좌표를 얻음
-        if ((latitude == null || longitude == null) && address != null) {
+        // 좌표만 있으면 주소를, 주소만 있으면 좌표를 보완한다.
+        // 둘 다 없으면 위치 없이 게시(위치는 선택 항목).
+        if (hasCoords && !hasAddress) {
+            address = kakaoGeocodingService.getAddress(latitude, longitude);
+        } else if (!hasCoords && hasAddress) {
             double[] coordinates = kakaoGeocodingService.getCoordinates(address);
             latitude = coordinates[0];
             longitude = coordinates[1];
         }
 
-        // 데이터가 충분하지 않으면 예외 발생
-        if (address == null || latitude == null || longitude == null) {
-            throw new IllegalArgumentException("주소 또는 좌표 정보가 충분하지 않습니다.");
-        }
-
-        // Create a feed
-        Feed feed = FeedRequestDto.toDto(findMember, feedRequestDto, address);
+        // Create a feed (보정된 주소/좌표를 저장)
+        Feed feed = FeedRequestDto.toDto(findMember, feedRequestDto, address, latitude, longitude);
 
         // Save the feed
         return FeedResponseDto.toDto(feedRepository.save(feed));
@@ -95,10 +91,25 @@ public class FeedServiceImpl implements FeedService {
         return feedRepository.findAllFeedsOrderByLikeCount(PageRequest.of(page, size));
     }
 
+    @Override
+    public Page<FeedWithLikeCountDto> getAllFeedsOrderByLatest(int page, int size) {
+        return feedRepository.findAllFeedsOrderByLatest(PageRequest.of(page, size));
+    }
+
+    @Override
+    public Page<FeedWithLikeCountDto> getFollowingFeed(Long memberId, int page, int size) {
+        return feedRepository.findFollowingFeed(memberId, PageRequest.of(page, size));
+    }
+
+    @Override
+    public Page<FeedWithLikeCountDto> searchFeeds(String q, int page, int size) {
+        return feedRepository.searchFeeds(q == null ? "" : q.trim(), PageRequest.of(page, size));
+    }
+
     @Transactional
     @Override
     public FeedUpdateResponseDto updateFeed(Member member, Long feedId, FeedRequestDto feedRequestDto) {
-        if (memberRepository.existsById(member.getId())) {
+        if (!memberRepository.existsById(member.getId())) {
             throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
         }
 
@@ -111,7 +122,7 @@ public class FeedServiceImpl implements FeedService {
     @Transactional
     @Override
     public void deleteFeed(Member member, Long feedId) {
-        if (memberRepository.existsById(member.getId())) {
+        if (!memberRepository.existsById(member.getId())) {
             throw new NotFoundException(ErrorCode.NOT_FOUND_MEMBER);
         }
 

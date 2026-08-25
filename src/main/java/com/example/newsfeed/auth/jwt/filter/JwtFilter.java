@@ -2,8 +2,7 @@ package com.example.newsfeed.auth.jwt.filter;
 
 import com.example.newsfeed.auth.jwt.service.JwtProvider;
 import com.example.newsfeed.auth.jwt.service.UserDetailsImpl;
-import com.example.newsfeed.exception.ErrorCode;
-import com.example.newsfeed.exception.NoAuthorizedException;
+import com.example.newsfeed.member.entity.Member;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,26 +23,14 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final UserDetailsService userDetailsService;
 
-
-    public JwtFilter(JwtProvider jwtProvider, UserDetailsService userDetailsService) {
+    public JwtFilter(JwtProvider jwtProvider) {
         this.jwtProvider = jwtProvider;
-        this.userDetailsService = userDetailsService;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         log.info("URI : {}", request.getRequestURI());
-
-        String token = getTokenFromRequest(request);
-
-        if (token == null) {
-            log.warn("토큰이 없음");
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         this.authenticate(request);
         filterChain.doFilter(request, response);
     }
@@ -62,17 +48,13 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
 
-        //토큰에서 userName을 추출
-        String username = this.jwtProvider.getUsername(token);
-        Long memberIdFromToken = this.jwtProvider.getMemberId(token);
-
-        //username에 해당하는 사용자 찾음
-        UserDetailsImpl userDetails = (UserDetailsImpl) userDetailsService.loadUserByUsername(username);
-
-        // 해당 userId와 userDetails에 있는 id와 동일한지 확인
-        if (!memberIdFromToken.equals(userDetails.getMemberId())) {
-            throw new NoAuthorizedException(ErrorCode.NO_AUTHOR);
-        }
+        // 서명이 검증된 토큰의 claims만으로 인증 주체를 구성한다 (매 요청 DB 조회 제거).
+        // id/email/role은 access token 발급 시 심어둔 값이라 재조회가 필요 없다.
+        Member principal = Member.fromClaims(
+                jwtProvider.getMemberId(token),
+                jwtProvider.getUsername(token),
+                jwtProvider.getRoleFromToken(token));
+        UserDetailsImpl userDetails = new UserDetailsImpl(principal);
 
         //SecurityContext에 인증 객체 저장
         this.setAuthentication(request, userDetails);

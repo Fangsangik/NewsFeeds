@@ -25,7 +25,11 @@ public class MemberRequestDto {
     private String email;
 
     @NotBlank(message = "비밀번호은 필수 값 입니다.")
-    @Length(min = 4, message = "비밀번호는 최소 4자입니다.")
+    @Length(min = 8, message = "비밀번호는 최소 8자입니다.")
+    @Pattern(
+        regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$",
+        message = "비밀번호는 영문, 숫자, 특수문자를 모두 포함해 8자 이상이어야 합니다."
+    )
     private String password;
 
     @NotBlank(message = "핸드폰 번호는 필수 값 입니다.")

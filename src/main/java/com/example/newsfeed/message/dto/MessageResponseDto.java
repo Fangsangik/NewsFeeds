@@ -3,27 +3,27 @@ package com.example.newsfeed.message.dto;
 import com.example.newsfeed.message.entity.Message;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor
+@Builder
 public class MessageResponseDto {
     private Long id;
-    private String content;
-    private Long memberId;
+    private Long senderId;
+    private Long receiverId;
+    private String message;
+    private boolean readStatus;
+    private LocalDateTime createdAt;
 
-    @Builder
-    public MessageResponseDto(Long id, String content, Long memberId) {
-        this.id = id;
-        this.content = content;
-        this.memberId = memberId;
-    }
-
-    public static MessageResponseDto toDto(Message savedMessage) {
+    public static MessageResponseDto from(Message m) {
         return MessageResponseDto.builder()
-                .id(savedMessage.getId())
-                .content(savedMessage.getContent())
-                .memberId(savedMessage.getMember().getId())
+                .id(m.getId())
+                .senderId(m.getSender() != null ? m.getSender().getId() : null)
+                .receiverId(m.getReceiver() != null ? m.getReceiver().getId() : null)
+                .message(m.getMessage())
+                .readStatus(m.isReadStatus())
+                .createdAt(m.getCreatedAt())
                 .build();
     }
 }

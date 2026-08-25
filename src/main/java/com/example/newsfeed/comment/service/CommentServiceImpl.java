@@ -25,11 +25,15 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final FeedRepository feedRepository;
     private final MemberRepository memberRepository;
+    private final com.example.newsfeed.notification.service.NotificationService notificationService;
 
-    public CommentServiceImpl(CommentRepository commentRepository, FeedRepository feedRepository, MemberRepository memberRepository) {
+    public CommentServiceImpl(CommentRepository commentRepository, FeedRepository feedRepository,
+                              MemberRepository memberRepository,
+                              com.example.newsfeed.notification.service.NotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.feedRepository = feedRepository;
         this.memberRepository = memberRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -52,6 +56,13 @@ public class CommentServiceImpl implements CommentService {
 
         // 저장
         Comment savedComment = commentRepository.save(comment);
+
+        // 게시물 작성자에게 댓글 알림 (본인 글은 무시)
+        String actorName = memberRepository.findById(member.getId()).map(m -> m.getName()).orElse("사용자");
+        notificationService.notify(feed.getMember().getId(),
+                com.example.newsfeed.notification.entity.Notification.Type.COMMENT,
+                member.getId(), actorName, feed.getId(),
+                actorName + "님이 회원님의 게시물에 댓글을 남겼습니다.");
 
         // ResponseDto 반환
         return CommentResponseDto.toDto(savedComment);
@@ -128,7 +139,8 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     @Override
     public void deleteComment(Member member, Long commentId) {
-        if (memberRepository.existsById(member.getId())) {
+        // 존재 체크가 반전돼 있어(회원이 있으면 예외) 모든 삭제가 404였다 → 부정 조건으로 수정.
+        if (!memberRepository.existsById(member.getId())) {
             throw new NotFoundException(NOT_FOUND_MEMBER);
         }
 

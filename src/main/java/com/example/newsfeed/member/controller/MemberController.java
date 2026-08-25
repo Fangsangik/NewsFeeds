@@ -21,7 +21,19 @@ public class MemberController {
         this.memberService = memberService;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/search")
+    public ResponseEntity<CommonResponse<org.springframework.data.domain.Page<com.example.newsfeed.member.dto.MemberSearchDto>>> searchMembers(
+            @org.springframework.web.bind.annotation.RequestParam(name = "q", defaultValue = "") String q,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        var pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        var result = (q == null || q.isBlank())
+                ? org.springframework.data.domain.Page.<com.example.newsfeed.member.dto.MemberSearchDto>empty(pageable)
+                : memberService.searchMembers(q.trim(), pageable);
+        return ResponseEntity.ok(new CommonResponse<>("회원 검색 완료", result));
+    }
+
+    @GetMapping("/{id:[0-9]+}")
     public ResponseEntity<CommonResponse<MemberResponseDto>> getProfile(@PathVariable Long id) {
         MemberResponseDto memberById = memberService.getMemberById(id);
         return ResponseEntity.ok(new CommonResponse<>("프로필 조회 완료", memberById));
@@ -41,7 +53,7 @@ public class MemberController {
         return ResponseEntity.ok(new CommonResponse<>("회원 정보 수정 완료", responseDto));
     }
 
-    @GetMapping("/{feedId}/member")
+    @GetMapping("/{feedId:[0-9]+}/member")
     public ResponseEntity<CommonResponse<MemberResponseDto>> getMemberByFeedId(@PathVariable Long feedId) {
         MemberResponseDto member = memberService.getMemberByFeedId(feedId);
         return ResponseEntity.ok(new CommonResponse<>("피드 작성자 조회 완료", member));

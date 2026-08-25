@@ -1,36 +1,62 @@
 package com.example.newsfeed.feed.dto;
 
 import com.example.newsfeed.comment.dto.CommentResponseDto;
-import com.example.newsfeed.comment.entity.Comment;
 import com.example.newsfeed.feed.entity.Feed;
 import com.example.newsfeed.like.dto.LikeResponseDto;
-import com.example.newsfeed.like.entity.Like;
+import com.example.newsfeed.member.entity.Member;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Getter
 public class FeedResponseDto {
+    private Long feedId;
     private String title;
     private String content;
     private String image;
+    private List<String> images;
     private String address;
+    private AuthorDto author;
     private List<CommentResponseDto> comments;
     private List<LikeResponseDto> likes;
 
     @Builder
-    public FeedResponseDto(String title, String content, String image, String address, List<CommentResponseDto> comments, List<LikeResponseDto> likes) {
+    public FeedResponseDto(Long feedId, String title, String content, String image, List<String> images, String address,
+                           AuthorDto author, List<CommentResponseDto> comments, List<LikeResponseDto> likes) {
+        this.feedId = feedId;
         this.title = title;
         this.content = content;
         this.image = image;
+        this.images = images;
         this.address = address;
+        this.author = author;
         this.comments = comments;
         this.likes = likes;
+    }
+
+    /** 피드 작성자 요약 정보. 프런트가 별도 /members/{feedId}/member 호출 없이 바로 사용. */
+    @Getter
+    public static class AuthorDto {
+        private final Long id;
+        private final String name;
+        private final String email;
+        private final String image;
+
+        public AuthorDto(Long id, String name, String email, String image) {
+            this.id = id;
+            this.name = name;
+            this.email = email;
+            this.image = image;
+        }
+
+        public static AuthorDto from(Member member) {
+            if (member == null) {
+                return null;
+            }
+            return new AuthorDto(member.getId(), member.getName(), member.getEmail(), member.getImage());
+        }
     }
 
     public static FeedResponseDto toDto(Feed feed) {
@@ -43,10 +69,13 @@ public class FeedResponseDto {
                 .collect(Collectors.toList()) : null;
 
         return FeedResponseDto.builder()
+                .feedId(feed.getId())
                 .title(feed.getTitle())
                 .content(feed.getContent())
                 .image(feed.getImage())
+                .images(feed.getImages())
                 .address(feed.getAddress())
+                .author(AuthorDto.from(feed.getMember()))
                 .comments(comments)
                 .likes(likes)
                 .build();

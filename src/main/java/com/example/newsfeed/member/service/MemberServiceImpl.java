@@ -154,4 +154,12 @@ public class MemberServiceImpl implements MemberService {
         // 비밀번호 변경 후 세션 무효화
         return MemberResponseDto.toDto(findMember);
     }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<com.example.newsfeed.member.dto.MemberSearchDto>
+            searchMembers(String q, org.springframework.data.domain.Pageable pageable) {
+        return memberRepository.searchByQuery(q, pageable)
+                .map(com.example.newsfeed.member.dto.MemberSearchDto::from);
+    }
 }
