@@ -25,4 +25,13 @@ public class AuthenticatedMemberUtil {
         }
         return ((UserDetailsImpl) auth.getPrincipal()).getMemberId();
     }
+
+    /** 인증이 없으면 예외 대신 null을 반환한다. (좋아요 여부처럼 비로그인도 허용하는 조회용) */
+    public static Long getAuthenticatedMemberIdOrNull() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof UserDetailsImpl principal)) {
+            return null;
+        }
+        return principal.getMemberId();
+    }
 }

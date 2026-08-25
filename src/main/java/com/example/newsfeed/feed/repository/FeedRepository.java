@@ -18,9 +18,14 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
     @Query("SELECT f FROM Feed f WHERE f.member.id = :memberId")
     List<Feed> findFeedsByMemberId(@Param("memberId") Long memberId);
 
-    @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, f.member.id, f.member.name, COALESCE(SUM(l.likeCount), 0L)) " +
-            "FROM Feed f LEFT JOIN f.likes l GROUP BY f.id, f.title, f.content, f.image, f.member.id, f.member.name ORDER BY COALESCE(SUM(l.likeCount), 0L) DESC")
+    @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, f.member.id, f.member.name, COUNT(l)) " +
+            "FROM Feed f LEFT JOIN f.likes l GROUP BY f.id, f.title, f.content, f.image, f.member.id, f.member.name ORDER BY COUNT(l) DESC")
     Page<FeedWithLikeCountDto> findAllFeedsOrderByLikeCount(Pageable pageable);
+
+    // 최신순 피드 (뉴스피드 기본 정렬)
+    @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, f.member.id, f.member.name, COUNT(l)) " +
+            "FROM Feed f LEFT JOIN f.likes l GROUP BY f.id, f.title, f.content, f.image, f.member.id, f.member.name ORDER BY f.id DESC")
+    Page<FeedWithLikeCountDto> findAllFeedsOrderByLatest(Pageable pageable);
 
     default Feed findByIdOrElseThrow(Long id) {
         return findById(id).orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_NEWSFEED));

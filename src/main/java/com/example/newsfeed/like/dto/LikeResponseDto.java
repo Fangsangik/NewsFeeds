@@ -7,19 +7,20 @@ import lombok.Getter;
 public class LikeResponseDto {
     private Long feedId;
     private Integer likeCount;
+    private Boolean likedByMe;
 
-    public LikeResponseDto(Long feedId, Integer likeCount) {
+    public LikeResponseDto(Long feedId, Integer likeCount, Boolean likedByMe) {
         this.feedId = feedId;
         this.likeCount = likeCount;
+        this.likedByMe = likedByMe;
     }
 
-    // 새로운 팩토리 메서드
-    public static LikeResponseDto fromCount(Long feedId, Long count) {
-        return new LikeResponseDto(feedId, count.intValue());
+    public static LikeResponseDto of(Long feedId, long count, boolean likedByMe) {
+        return new LikeResponseDto(feedId, (int) count, likedByMe);
     }
 
-    // 기존 DTO 변환 메서드 (엔터티에서 변환)
+    // FeedResponseDto의 likes 목록 매핑 호환용 (per-user 행 하나 = 좋아요 1).
     public static LikeResponseDto toDto(Like like) {
-        return new LikeResponseDto(like.getFeed().getId(), like.getLikeCount());
+        return new LikeResponseDto(like.getFeed().getId(), like.getLikeCount(), null);
     }
 }
