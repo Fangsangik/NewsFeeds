@@ -45,7 +45,7 @@ public class FeedController {
     // 위치기 변경 되어야 하는거 아닌가 라는 의심
     // 회원 기반 피드 조회
     @GetMapping("/members/{memberId}")
-    public ResponseEntity<CommonResponse<List<FeedResponseDto>>> getFeedsByMemberId(Long memberId) {
+    public ResponseEntity<CommonResponse<List<FeedResponseDto>>> getFeedsByMemberId(@PathVariable Long memberId) {
 
         List<FeedResponseDto> feeds = feedService.getFeedsByMemberId(memberId);
         return ResponseEntity.ok(new CommonResponse<>("회원 기반 피드 조회 완료", feeds));

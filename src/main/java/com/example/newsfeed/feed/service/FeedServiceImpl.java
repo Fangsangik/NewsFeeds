@@ -45,25 +45,21 @@ public class FeedServiceImpl implements FeedService {
         Double latitude = feedRequestDto.getLatitude();
         Double longitude = feedRequestDto.getLongitude();
 
-        // 주소가 없는 경우, 위도/경도를 통해 주소를 얻음
-        if (address == null && latitude != null && longitude != null) {
-            address = kakaoGeocodingService.getAddress(latitude, longitude);
-        }
+        boolean hasAddress = address != null && !address.isBlank();
+        boolean hasCoords = latitude != null && longitude != null;
 
-        // 좌표가 없는 경우, 주소를 통해 좌표를 얻음
-        if ((latitude == null || longitude == null) && address != null) {
+        // 좌표만 있으면 주소를, 주소만 있으면 좌표를 보완한다.
+        // 둘 다 없으면 위치 없이 게시(위치는 선택 항목).
+        if (hasCoords && !hasAddress) {
+            address = kakaoGeocodingService.getAddress(latitude, longitude);
+        } else if (!hasCoords && hasAddress) {
             double[] coordinates = kakaoGeocodingService.getCoordinates(address);
             latitude = coordinates[0];
             longitude = coordinates[1];
         }
 
-        // 데이터가 충분하지 않으면 예외 발생
-        if (address == null || latitude == null || longitude == null) {
-            throw new IllegalArgumentException("주소 또는 좌표 정보가 충분하지 않습니다.");
-        }
-
-        // Create a feed
-        Feed feed = FeedRequestDto.toDto(findMember, feedRequestDto, address);
+        // Create a feed (보정된 주소/좌표를 저장)
+        Feed feed = FeedRequestDto.toDto(findMember, feedRequestDto, address, latitude, longitude);
 
         // Save the feed
         return FeedResponseDto.toDto(feedRepository.save(feed));

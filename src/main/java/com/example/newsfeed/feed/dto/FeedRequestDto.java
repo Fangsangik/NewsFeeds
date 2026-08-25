@@ -25,16 +25,15 @@ public class FeedRequestDto {
     }
 
 
-    public static Feed toDto(Member member, FeedRequestDto feedRequestDto, String address) {
+    public static Feed toDto(Member member, FeedRequestDto feedRequestDto, String address, Double latitude, Double longitude) {
         return Feed.builder()
                 .member(member)
                 .title(feedRequestDto.getTitle())
                 .content(feedRequestDto.getContent())
                 .image(feedRequestDto.getImage())
-                .address(feedRequestDto.getAddress())
-                .latitude(feedRequestDto.getLatitude())
-                .longitude(feedRequestDto.getLongitude())
                 .address(address)
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 }
