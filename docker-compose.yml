@@ -39,6 +39,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      TZ: Asia/Seoul
       SPRING_APPLICATION_NAME: newsfeed_project
       SPRING_JWT_SECRET: make_sure_to_keep_this_secret_key_not_exposed_to_public
       SPRING_SESSION_STORE_TYPE: jdbc
