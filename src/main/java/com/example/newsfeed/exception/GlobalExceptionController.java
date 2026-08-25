@@ -81,9 +81,17 @@ public class GlobalExceptionController {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> constraintViolationException(Exception e) {
-        log.error("Unhandled exception → returning 400: {}", e.getMessage(), e);
+    // 비즈니스 검증용으로 서비스에서 던지는 IllegalArgument/IllegalState는 클라이언트 오류(400).
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<String> illegalArgumentException(RuntimeException e) {
+        log.warn("Bad request: {}", e.getMessage());
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // 그 외 미처리 예외는 실제 서버 오류(500) — 400으로 가리지 않는다. 내부 메시지는 노출하지 않음.
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> unhandledException(Exception e) {
+        log.error("Unhandled exception → 500", e);
+        return new ResponseEntity<>("서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
