@@ -1,6 +1,6 @@
 import { api } from "./api.js";
 import { auth, likes } from "./store.js";
-import { el, avatar, toast, escapeHtml } from "./ui.js";
+import { el, avatar, toast, escapeHtml, linkify } from "./ui.js";
 
 let state = {
   page: 0,
@@ -112,7 +112,7 @@ function renderCard(item) {
     el("div", { class: "card-body" }, [
       item.title ? el("div", { class: "post-title" }, item.title) : null,
       item.content
-        ? el("div", { class: "text" }, item.content)
+        ? el("div", { class: "text" }, linkify(item.content))
         : (item.title ? null : el("span", { class: "muted" }, "—")),
     ]),
     el("a", {

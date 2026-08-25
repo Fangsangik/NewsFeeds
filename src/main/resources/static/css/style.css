@@ -756,3 +756,7 @@ input, textarea {
 .noti-body { min-width: 0; }
 .noti-msg { font-size: 14px; }
 .noti-time { font-size: 12px; margin-top: 2px; }
+
+/* 멘션/해시태그 */
+.mention, .tag { color: var(--accent); cursor: pointer; }
+.mention:hover, .tag:hover { text-decoration: underline; }

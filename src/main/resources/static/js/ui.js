@@ -45,6 +45,28 @@ export function fmtTimeAgo(iso) {
   return date.toLocaleDateString();
 }
 
+// 본문/댓글의 @멘션·#해시태그를 파란 클릭 링크로 변환한 DocumentFragment를 반환.
+// 클릭 시 해당 키워드로 게시물 검색(#/search)으로 이동한다.
+export function linkify(text) {
+  const frag = document.createDocumentFragment();
+  const s = String(text ?? "");
+  const re = /([@#][\w가-힣._-]+)/g;
+  let last = 0, m;
+  while ((m = re.exec(s)) !== null) {
+    if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+    const token = m[1];
+    const isTag = token[0] === "#";
+    const query = isTag ? token : token.slice(1); // 해시태그는 #포함 검색, 멘션은 이름만
+    frag.appendChild(el("span", {
+      class: isTag ? "tag" : "mention",
+      onclick: () => { location.hash = `#/search/${encodeURIComponent(query)}`; },
+    }, token));
+    last = m.index + token.length;
+  }
+  if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+  return frag;
+}
+
 export function escapeHtml(s) {
   if (s == null) return "";
   return String(s).replace(/[&<>"']/g, c => ({
