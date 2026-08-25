@@ -39,12 +39,29 @@ export async function renderProfile(root, memberId) {
 }
 
 function buildHeader(name, count, isMe, image, memberId, member) {
-  const actions = isMe
-    ? [
-        el("button", { class: "btn-ghost", onclick: () => openProfileEditor(memberId, member) }, "프로필 편집"),
-        el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/"; } }, "홈으로"),
-      ]
-    : [];
+  let actions;
+  if (isMe) {
+    actions = [
+      el("button", { class: "btn-ghost", onclick: () => openProfileEditor(memberId, member) }, "프로필 편집"),
+      el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/"; } }, "홈으로"),
+    ];
+  } else {
+    // 타인 프로필: 관계 상태에 따라 팔로우(친구요청)/친구끊기 + 메시지
+    const box = el("div", { class: "profile-actions" });
+    actions = [box];
+    const reload = () => renderProfile(document.getElementById("app"), memberId);
+    box.appendChild(el("button", { class: "btn-ghost", onclick: () => { location.hash = `#/dm/${memberId}`; } }, "메시지"));
+    const rel = el("button", { class: "btn-ghost", disabled: true }, "…");
+    box.appendChild(rel);
+    api.get(`/friends/status/${memberId}`).then(s => {
+      const st = s?.status;
+      rel.disabled = false;
+      if (st === "friends") { rel.textContent = "친구 끊기"; rel.onclick = async () => { try { await api.del(`/friends/by-member/${memberId}`); toast("친구를 끊었어요."); reload(); } catch (e) { toast(e.message || "실패"); } }; }
+      else if (st === "requested_by_me") { rel.textContent = "요청됨"; rel.disabled = true; }
+      else if (st === "requested_to_me") { rel.textContent = "요청 수락"; rel.classList.add("accent"); rel.onclick = async () => { try { await api.patch("/friends/accept", { senderId: memberId }); toast("친구가 되었어요."); reload(); } catch (e) { toast(e.message || "실패"); } }; }
+      else { rel.textContent = "친구 요청"; rel.classList.add("accent"); rel.onclick = async () => { try { await api.post("/friends", { receiverId: memberId }); toast("친구 요청을 보냈어요."); reload(); } catch (e) { toast(e.message || "실패"); } }; }
+    }).catch(() => { rel.textContent = "친구 요청"; rel.disabled = false; });
+  }
   return el("section", { class: "profile-head" }, [
     el("div", { class: "profile-avatar" }, avatar(name, "lg", image)),
     el("div", { class: "profile-meta" }, [

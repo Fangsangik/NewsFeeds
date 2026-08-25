@@ -58,11 +58,15 @@ async function loadFriends(body) {
 
 function friendRow(f) {
   const name = f.name || `user${f.id}`;
+  const goProfile = () => { location.hash = `#/profile/${f.id}`; };
+  const av = avatar(name);
+  av.style.cursor = "pointer";
+  av.addEventListener("click", goProfile);
   return el("div", { class: "friend-card" }, [
-    avatar(name),
-    el("div", { class: "friend-meta" }, [
+    av,
+    el("div", { class: "friend-meta clickable", style: { cursor: "pointer" }, onclick: goProfile }, [
       el("div", { class: "name" }, name),
-      el("div", { class: "sub muted" }, "내 친구"),
+      el("div", { class: "sub muted" }, "프로필 보기"),
     ]),
     el("button", { class: "btn-ghost", onclick: () => { location.hash = `#/dm/${f.id}`; } }, "메시지"),
   ]);
