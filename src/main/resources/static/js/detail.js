@@ -137,12 +137,9 @@ function buildView(feedId, feed, likeData, comments) {
     catch { toast(url); }
   }
 
-  const mediaImg = feed?.image
-    ? el("img", { src: feed.image, alt: feed.title || "" })
-    : el("div", { class: "placeholder" }, "이 게시물에는 이미지가 없습니다.");
-  if (feed?.image) mediaImg.addEventListener("error", () => {
-    mediaImg.replaceWith(el("div", { class: "placeholder" }, "📷"));
-  });
+  // 다중 이미지 캐러셀 (images 우선, 없으면 단일 image, 없으면 placeholder)
+  const imgs = (feed?.images && feed.images.length) ? feed.images : (feed?.image ? [feed.image] : []);
+  const mediaImg = buildMedia(imgs, feed?.title || "");
 
   const closeBtn = el("button", {
     class: "detail-close", title: "닫기",
@@ -252,4 +249,29 @@ async function onLike(feedId, heartEl, countEl) {
     likes.set(feedId, wasOn);
     toast(err.message || "좋아요 실패");
   }
+}
+
+// 다중 이미지 캐러셀 (1장이면 단순 이미지, 0장이면 placeholder)
+function buildMedia(imgs, alt) {
+  if (!imgs.length) return el("div", { class: "placeholder" }, "이 게시물에는 이미지가 없습니다.");
+  if (imgs.length === 1) {
+    const img = el("img", { src: imgs[0], alt });
+    img.addEventListener("error", () => img.replaceWith(el("div", { class: "placeholder" }, "📷")));
+    return img;
+  }
+  let idx = 0;
+  const imgEl = el("img", { src: imgs[0], alt });
+  imgEl.addEventListener("error", () => { imgEl.style.opacity = "0.3"; });
+  const dots = el("div", { class: "carousel-dots" }, imgs.map((_, i) => el("span", { class: `dot ${i === 0 ? "on" : ""}` })));
+  const counter = el("div", { class: "carousel-count" }, `1/${imgs.length}`);
+  function show(i) {
+    idx = (i + imgs.length) % imgs.length;
+    imgEl.style.opacity = "1";
+    imgEl.src = imgs[idx];
+    [...dots.children].forEach((d, k) => d.classList.toggle("on", k === idx));
+    counter.textContent = `${idx + 1}/${imgs.length}`;
+  }
+  const prev = el("button", { class: "carousel-nav prev", onclick: () => show(idx - 1) }, "‹");
+  const next = el("button", { class: "carousel-nav next", onclick: () => show(idx + 1) }, "›");
+  return el("div", { class: "carousel" }, [imgEl, prev, next, dots, counter]);
 }

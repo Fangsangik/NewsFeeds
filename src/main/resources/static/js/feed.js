@@ -161,9 +161,7 @@ export function openComposer(onCreated) {
     if (e.target === backdrop) close();
   }});
 
-  let pickedFile = null;
-  let pickedUrl = null;
-  let uploadedUrl = null;
+  let pickedFiles = []; // File[]
 
   const titleIn = el("input", { class: "title", placeholder: "제목" });
   const contentIn = el("textarea", { placeholder: "문구 입력..." });
@@ -173,12 +171,12 @@ export function openComposer(onCreated) {
   const fileIn = el("input", {
     type: "file",
     accept: "image/*",
+    multiple: true,
     style: { display: "none" },
-    onchange: async (e) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      pickedFile = f;
-      pickedUrl = URL.createObjectURL(f);
+    onchange: (e) => {
+      const fs = [...(e.target.files || [])];
+      if (fs.length) pickedFiles.push(...fs);
+      e.target.value = ""; // 같은 파일 다시 선택 가능하게
       renderLeft();
     },
   });
@@ -193,16 +191,24 @@ export function openComposer(onCreated) {
 
   function renderLeft() {
     left.innerHTML = "";
-    if (pickedUrl) {
-      left.appendChild(el("img", { src: pickedUrl }));
+    if (pickedFiles.length) {
+      const grid = el("div", { class: "composer-thumbs" }, pickedFiles.map((f, i) => {
+        const url = URL.createObjectURL(f);
+        return el("div", { class: "composer-thumb" }, [
+          el("img", { src: url }),
+          el("button", { class: "thumb-del", title: "제거", onclick: () => { pickedFiles.splice(i, 1); renderLeft(); } }, "✕"),
+        ]);
+      }));
+      const addBtn = el("button", { class: "thumb-add", onclick: () => fileIn.click() }, "＋ 사진 추가");
+      left.appendChild(grid);
+      left.appendChild(addBtn);
     } else {
       const prompt = el("div", { class: "file-prompt" }, [
         el("div", { style: { fontSize: "44px" } }, "📷"),
-        el("div", {}, "사진을 여기에 끌어다 놓으세요"),
+        el("div", {}, "사진을 여러 장 선택할 수 있어요"),
         el("label", { for: "file-pick" }, "컴퓨터에서 선택"),
       ]);
-      const label = prompt.querySelector("label");
-      label.addEventListener("click", () => fileIn.click());
+      prompt.querySelector("label").addEventListener("click", () => fileIn.click());
       left.appendChild(prompt);
     }
   }
@@ -215,22 +221,24 @@ export function openComposer(onCreated) {
   async function share() {
     errEl.textContent = "";
     // 사진은 선택 항목. 제목이나 내용 중 하나만 있으면 글만으로도 게시 가능.
-    if (!titleIn.value.trim() && !contentIn.value.trim()) {
-      errEl.textContent = "제목이나 내용을 입력해주세요.";
+    if (!titleIn.value.trim() && !contentIn.value.trim() && !pickedFiles.length) {
+      errEl.textContent = "제목이나 내용을 입력하거나 사진을 추가해주세요.";
       return;
     }
     shareBtn.disabled = true;
     shareBtn.textContent = "공유 중...";
     try {
-      if (pickedFile && !uploadedUrl) {
-        const r = await api.uploadImage(pickedFile);
-        uploadedUrl = r?.url;
-        if (!uploadedUrl) throw new Error("이미지 업로드 실패");
+      // 선택한 사진을 순서대로 업로드
+      const images = [];
+      for (const f of pickedFiles) {
+        const r = await api.uploadImage(f);
+        if (r?.url) images.push(r.url);
       }
       const payload = {
         title: titleIn.value.trim(),
         content: contentIn.value,
-        image: uploadedUrl,
+        image: images[0] || null, // 커버(하위호환)
+        images,
         address: addressIn.value.trim(),
         latitude: null,
         longitude: null,
