@@ -39,7 +39,14 @@ function buildView(feedId, feed, likeData, comments) {
   }, liked ? "♥" : "♡");
 
   const commentsBody = el("div", { class: "side-body" });
-  renderComments(commentsBody, comments);
+
+  async function refresh() {
+    const fresh = await api.get(`/comments/feed/${feedId}`, { auth: false });
+    commentsBody.querySelectorAll(".comment:not(.caption)").forEach(n => n.remove());
+    renderComments(commentsBody, fresh, feedId, refresh);
+  }
+
+  renderComments(commentsBody, comments, feedId, refresh);
 
   const captionRow = el("div", { class: "comment" }, [
     avatar(authorName),
@@ -72,9 +79,7 @@ function buildView(feedId, feed, likeData, comments) {
         content: text,
       });
       commentInput.value = "";
-      const fresh = await api.get(`/comments/feed/${feedId}`, { auth: false });
-      commentsBody.querySelectorAll(".comment:not(.caption)").forEach(n => n.remove());
-      renderComments(commentsBody, fresh);
+      await refresh();
     } catch (err) {
       toast(err.message || "댓글 작성 실패");
       submitBtn.disabled = false;
@@ -104,26 +109,55 @@ function buildView(feedId, feed, likeData, comments) {
   ]);
 }
 
-function renderComments(parent, comments) {
+function renderComments(parent, comments, feedId, refresh) {
   if (!comments?.length) {
     parent.appendChild(el("div", { class: "muted center", style: { padding: "20px" } }, "첫 댓글을 남겨보세요."));
     return;
   }
   comments.forEach(c => {
-    parent.appendChild(commentRow(c, false));
-    (c.childComments || []).forEach(child => parent.appendChild(commentRow(child, true)));
+    parent.appendChild(commentRow(c, false, feedId, refresh));
+    (c.childComments || []).forEach(child => parent.appendChild(commentRow(child, true, feedId, refresh)));
   });
 }
 
-function commentRow(c, isChild) {
-  const who = `user`;
-  return el("div", { class: `comment ${isChild ? "child" : ""}` }, [
-    avatar(who),
-    el("div", {}, [
-      el("span", { class: "name" }, who),
-      el("span", { class: "text" }, c.content || ""),
-    ]),
+function commentRow(c, isChild, feedId, refresh) {
+  const who = c.authorName || `user${c.authorId ?? ""}`;
+  const meta = el("div", {}, [
+    el("span", { class: "name" }, who),
+    el("span", { class: "text" }, c.content || ""),
   ]);
+  const row = el("div", { class: `comment ${isChild ? "child" : ""}` }, [avatar(who), meta]);
+
+  // 답글은 최상위 댓글에만 (백엔드는 1단계 대댓글 지원)
+  if (!isChild && feedId && refresh) {
+    let box = null;
+    const replyLink = el("a", { class: "reply-link", onclick: (e) => { e.preventDefault(); toggle(); } }, "답글 달기");
+    meta.appendChild(el("div", {}, replyLink));
+
+    function toggle() {
+      if (box) { box.remove(); box = null; return; }
+      const input = el("input", { class: "reply-input", placeholder: "답글 달기...", onkeydown: (e) => { if (e.key === "Enter") post(); } });
+      const btn = el("button", { class: "reply-send", onclick: post }, "게시");
+      box = el("div", { class: "reply-box" }, [input, btn]);
+      meta.appendChild(box);
+      input.focus();
+
+      async function post() {
+        if (!auth.isLoggedIn) { location.hash = "#/login"; return; }
+        const text = input.value.trim();
+        if (!text) return;
+        btn.disabled = true;
+        try {
+          await api.post("/comments", { memberId: auth.meId, feedId, parentId: c.commentId, content: text });
+          await refresh();
+        } catch (err) {
+          toast(err.message || "답글 작성 실패");
+          btn.disabled = false;
+        }
+      }
+    }
+  }
+  return row;
 }
 
 async function onLike(feedId, heartEl, countEl) {

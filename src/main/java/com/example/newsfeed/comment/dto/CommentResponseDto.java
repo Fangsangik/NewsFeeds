@@ -13,6 +13,8 @@ public class CommentResponseDto {
     private Long commentId; // 댓글 ID
     private String content; // 댓글 내용
     private Long feedId; // 피드 ID
+    private Long authorId; // 작성자 ID
+    private String authorName; // 작성자 이름
     private List<CommentResponseDto> childComments; // 대댓글 리스트
 
     public static CommentResponseDto toDto(Comment comment) {
@@ -20,6 +22,8 @@ public class CommentResponseDto {
                 .commentId(comment.getId())
                 .content(comment.getContent())
                 .feedId(comment.getFeed().getId())
+                .authorId(comment.getMember() != null ? comment.getMember().getId() : null)
+                .authorName(comment.getMember() != null ? comment.getMember().getName() : null)
                 .childComments(comment.getChildren() != null ?
                         comment.getChildren().stream()
                                 .map(CommentResponseDto::toDto)
