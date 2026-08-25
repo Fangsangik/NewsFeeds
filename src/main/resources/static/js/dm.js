@@ -96,9 +96,10 @@ async function renderInbox(root) {
         ]),
       ]);
       list.appendChild(row);
-      // 마지막 메시지 미리보기 (가벼운 개별 조회)
-      api.get(`/messages/with/${peer.id}?page=0&size=1`).then(page => {
-        const last = (page?.content ?? [])[0];
+      // 마지막 메시지 미리보기. 대화는 createdAt ASC라 마지막 원소가 최신이다.
+      api.get(`/messages/with/${peer.id}?page=0&size=30`).then(page => {
+        const arr = page?.content ?? [];
+        const last = arr[arr.length - 1];
         if (last?.message) sub.textContent = (Number(last.senderId) === Number(auth.meId) ? "나: " : "") + last.message;
       }).catch(() => {});
     });
