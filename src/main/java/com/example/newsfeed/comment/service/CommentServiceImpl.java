@@ -128,7 +128,8 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     @Override
     public void deleteComment(Member member, Long commentId) {
-        if (memberRepository.existsById(member.getId())) {
+        // 존재 체크가 반전돼 있어(회원이 있으면 예외) 모든 삭제가 404였다 → 부정 조건으로 수정.
+        if (!memberRepository.existsById(member.getId())) {
             throw new NotFoundException(NOT_FOUND_MEMBER);
         }
 
