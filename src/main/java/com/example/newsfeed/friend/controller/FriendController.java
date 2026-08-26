@@ -92,4 +92,16 @@ public class FriendController {
         friendService.deleteBetween(me.getId(), memberId);
         return ResponseEntity.noContent().build();
     }
+
+    // 특정 회원의 친구 수 (상호 모델 → 팔로워=팔로잉)
+    @GetMapping("/count/{memberId}")
+    public ResponseEntity<java.util.Map<String, Long>> friendCount(@PathVariable Long memberId) {
+        return ResponseEntity.ok(java.util.Map.of("friends", friendService.countFriends(memberId)));
+    }
+
+    // 특정 회원의 친구(팔로워/팔로잉) 목록
+    @GetMapping("/members/{memberId}")
+    public ResponseEntity<java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto>> friendMembers(@PathVariable Long memberId) {
+        return ResponseEntity.ok(friendService.friendMembers(memberId));
+    }
 }

@@ -162,6 +162,21 @@ public class FriendServiceImpl implements FriendService {
         friendRepository.findBetween(meId, otherId).forEach(friendRepository::delete);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public long countFriends(Long memberId) {
+        return friendRepository.countAcceptedFriends(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto> friendMembers(Long memberId) {
+        java.util.List<Long> ids = friendRepository.findAcceptedFriendMemberIds(memberId);
+        return memberRepository.findAllById(ids).stream()
+                .map(com.example.newsfeed.friend.dto.FriendMemberDto::new)
+                .toList();
+    }
+
     private boolean isAlreadyFriend(Member sender, Member receiver) {
         return friendRepository.existsBySenderAndReceiver(sender, receiver)
                 || friendRepository.existsBySenderAndReceiver(receiver, sender);

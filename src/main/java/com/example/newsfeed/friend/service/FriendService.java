@@ -13,4 +13,6 @@ public interface FriendService {
     Page<FriendListDto> findFriendList(Member member, int page, int size);
     String statusWith(Long meId, Long otherId);
     void deleteBetween(Long meId, Long otherId);
+    long countFriends(Long memberId);
+    java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto> friendMembers(Long memberId);
 }
