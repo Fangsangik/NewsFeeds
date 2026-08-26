@@ -104,4 +104,13 @@ public class FriendController {
     public ResponseEntity<java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto>> friendMembers(@PathVariable Long memberId) {
         return ResponseEntity.ok(friendService.friendMembers(memberId));
     }
+
+    // 팔로우 추천(알 수도 있는 사람)
+    @GetMapping("/suggestions")
+    public ResponseEntity<java.util.List<com.example.newsfeed.friend.dto.FriendSuggestionDto>> suggestions(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(defaultValue = "10") int limit) {
+        Member me = AuthenticatedMemberUtil.getMember(userDetails);
+        return ResponseEntity.ok(friendService.suggestions(me.getId(), limit));
+    }
 }
