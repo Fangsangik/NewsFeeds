@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { auth, likes } from "./store.js";
 import { el, avatar, toast, linkify } from "./ui.js";
+import { openComposer } from "./feed.js";
 
 export async function renderDetail(root, feedId) {
   root.innerHTML = "";
@@ -91,16 +92,11 @@ function buildView(feedId, feed, likeData, comments) {
   }
   captionRow.classList.add("caption");
 
-  async function editFeed() {
-    const newTitle = prompt("제목 수정", feed?.title || "");
-    if (newTitle === null) return;
-    const newContent = prompt("내용 수정", feed?.content || "");
-    if (newContent === null) return;
-    try {
-      await api.patch(`/feeds/${feedId}`, { title: newTitle, content: newContent });
-      toast("수정되었습니다.");
-      renderDetail(document.getElementById("app"), feedId);
-    } catch (err) { toast(err.message || "수정 실패"); }
+  function editFeed() {
+    const imgs = (feed?.images && feed.images.length) ? feed.images : (feed?.image ? [feed.image] : []);
+    openComposer(() => renderDetail(document.getElementById("app"), feedId), {
+      feedId, title: feed?.title, content: feed?.content, address: feed?.address, images: imgs,
+    });
   }
 
   async function deleteFeed() {
@@ -183,6 +179,27 @@ function commentRow(c, isChild, feedId, refresh) {
     el("span", { class: "name" }, who),
     el("span", { class: "text" }, linkify(c.content || "")),
   ]);
+
+  // 댓글 좋아요(♥) — 낙관적 토글 + 서버 응답으로 확정
+  let liked = !!c.likedByMe;
+  let cnt = Number(c.likeCount || 0);
+  const cLikeCount = el("span", { class: "clike-count" }, cnt ? String(cnt) : "");
+  const cHeart = el("button", { class: `clike ${liked ? "on" : ""}`, title: "좋아요", onclick: async () => {
+    if (!auth.isLoggedIn) { location.hash = "#/login"; return; }
+    liked = !liked; cnt = Math.max(0, cnt + (liked ? 1 : -1));
+    cHeart.classList.toggle("on", liked); cHeart.textContent = liked ? "♥" : "♡";
+    cLikeCount.textContent = cnt ? String(cnt) : "";
+    try {
+      const r = await api.post(`/comment-likes/${c.commentId}`);
+      if (r && typeof r.liked === "boolean") {
+        liked = r.liked; cnt = Number(r.count || 0);
+        cHeart.classList.toggle("on", liked); cHeart.textContent = liked ? "♥" : "♡";
+        cLikeCount.textContent = cnt ? String(cnt) : "";
+      }
+    } catch (err) { toast(err.message || "좋아요 실패"); }
+  }}, liked ? "♥" : "♡");
+  meta.appendChild(el("div", { class: "clike-row" }, [cHeart, cLikeCount]));
+
   const row = el("div", { class: `comment ${isChild ? "child" : ""}` }, [avatar(who), meta]);
 
   // 내 댓글이면 삭제 버튼

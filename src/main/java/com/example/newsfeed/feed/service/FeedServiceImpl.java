@@ -115,6 +115,8 @@ public class FeedServiceImpl implements FeedService {
 
         Feed feed = feedRepository.findByIdOrElseThrow(feedId);
         feed.update(feedRequestDto.getTitle(), feedRequestDto.getContent());
+        // 이미지 편집: images가 전달되면 목록 교체(빈 배열이면 이미지 제거). null이면 그대로 유지.
+        feed.replaceImages(feedRequestDto.getImages());
 
         return FeedUpdateResponseDto.toDto(feed);
     }
