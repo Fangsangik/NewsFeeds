@@ -69,11 +69,52 @@ function buildHeader(name, count, isMe, image, memberId, member) {
         el("span", { class: "profile-name" }, name),
         ...actions,
       ]),
-      el("div", { class: "profile-stats" }, [
-        el("span", {}, [el("b", {}, String(count)), document.createTextNode(" 게시물")]),
-      ]),
+      (() => {
+        // 상호 친구 모델이라 팔로워 = 팔로잉 = 친구 수. 클릭 시 친구 목록 모달.
+        const followerB = el("b", {}, "0");
+        const followingB = el("b", {}, "0");
+        api.get(`/friends/count/${memberId}`).then(r => {
+          const n = String(r?.friends ?? 0);
+          followerB.textContent = n; followingB.textContent = n;
+        }).catch(() => {});
+        return el("div", { class: "profile-stats" }, [
+          el("span", {}, [el("b", {}, String(count)), document.createTextNode(" 게시물")]),
+          el("span", { class: "stat-link", onclick: () => openFriendList(memberId, "팔로워") }, [followerB, document.createTextNode(" 팔로워")]),
+          el("span", { class: "stat-link", onclick: () => openFriendList(memberId, "팔로잉") }, [followingB, document.createTextNode(" 팔로잉")]),
+        ]);
+      })(),
     ]),
   ]);
+}
+
+// 팔로워/팔로잉(친구) 목록 모달
+async function openFriendList(memberId, title) {
+  const listEl = el("div", { class: "friend-modal-list" }, el("div", { class: "muted center", style: { padding: "20px" } }, "불러오는 중..."));
+  const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) backdrop.remove(); } });
+  backdrop.appendChild(el("div", { class: "modal small" }, [
+    el("div", { class: "modal-head" }, [
+      el("button", { onclick: () => backdrop.remove(), title: "닫기" }, "✕"),
+      el("span", {}, title),
+      el("span", {}, ""),
+    ]),
+    listEl,
+  ]));
+  document.body.appendChild(backdrop);
+  try {
+    const members = await api.get(`/friends/members/${memberId}`);
+    listEl.innerHTML = "";
+    if (!members?.length) { listEl.appendChild(el("div", { class: "empty" }, "아직 없어요.")); return; }
+    members.forEach(m => {
+      const row = el("button", { class: "friend-modal-row", onclick: () => { backdrop.remove(); location.hash = `#/profile/${m.id}`; } }, [
+        avatar(m.name || `user${m.id}`, "sm", m.image),
+        el("div", { class: "name" }, m.name || `user${m.id}`),
+      ]);
+      listEl.appendChild(row);
+    });
+  } catch (e) {
+    listEl.innerHTML = "";
+    listEl.appendChild(el("div", { class: "empty" }, "목록을 가져오지 못했어요."));
+  }
 }
 
 function buildGrid(feeds, memberId) {

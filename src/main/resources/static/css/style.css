@@ -806,3 +806,22 @@ input, textarea {
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
 .thumb-add { margin: 6px 8px; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.12); color: #fff; font-size: 13px; cursor: pointer; }
+
+/* ---------- 실시간 소셜: 팔로워/팔로잉 · DM 읽음/사진 ---------- */
+.profile-stats { display: flex; gap: 18px; }
+.stat-link { cursor: pointer; }
+.stat-link:hover { color: var(--text-muted); }
+.friend-modal-list { max-height: 60vh; overflow-y: auto; }
+.friend-modal-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 16px; text-align: left; background: var(--surface);
+  border: none; border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.friend-modal-row:hover { background: #fafafa; }
+.friend-modal-row .name { font-weight: 600; }
+
+.dm-meta { display: flex; align-items: center; gap: 6px; margin: 2px 6px 0; }
+.dm-msg.mine .dm-meta { justify-content: flex-end; }
+.dm-read { font-size: 11px; color: var(--accent); }
+.dm-image { max-width: 200px; max-height: 240px; border-radius: 14px; object-fit: cover; cursor: pointer; display: block; }
+.dm-photo { font-size: 20px; padding: 0 6px; }
