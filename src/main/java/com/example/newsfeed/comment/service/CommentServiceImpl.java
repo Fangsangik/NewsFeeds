@@ -67,6 +67,17 @@ public class CommentServiceImpl implements CommentService {
                 member.getId(), actorName, feed.getId(),
                 actorName + "님이 회원님의 게시물에 댓글을 남겼습니다.");
 
+        // 답글이면 부모 댓글 작성자에게도 알림 (게시물 작성자와 중복이면 notify가 걸러줌은 아니므로 다를 때만)
+        if (parentComment != null && parentComment.getMember() != null) {
+            Long parentAuthorId = parentComment.getMember().getId();
+            if (!parentAuthorId.equals(feed.getMember().getId())) {
+                notificationService.notify(parentAuthorId,
+                        com.example.newsfeed.notification.entity.Notification.Type.COMMENT,
+                        member.getId(), actorName, feed.getId(),
+                        actorName + "님이 회원님의 댓글에 답글을 남겼습니다.");
+            }
+        }
+
         // ResponseDto 반환
         return CommentResponseDto.toDto(savedComment);
     }
