@@ -273,5 +273,20 @@ function buildMedia(imgs, alt) {
   }
   const prev = el("button", { class: "carousel-nav prev", onclick: () => show(idx - 1) }, "‹");
   const next = el("button", { class: "carousel-nav next", onclick: () => show(idx + 1) }, "›");
-  return el("div", { class: "carousel" }, [imgEl, prev, next, dots, counter]);
+  const wrap = el("div", { class: "carousel" }, [imgEl, prev, next, dots, counter]);
+
+  // 터치/마우스 스와이프: 가로 이동이 40px 넘으면 이전/다음.
+  let startX = null;
+  const onStart = (x) => { startX = x; };
+  const onEnd = (x) => {
+    if (startX == null) return;
+    const dx = x - startX; startX = null;
+    if (Math.abs(dx) > 40) show(dx < 0 ? idx + 1 : idx - 1);
+  };
+  wrap.addEventListener("touchstart", (e) => onStart(e.touches[0].clientX), { passive: true });
+  wrap.addEventListener("touchend", (e) => onEnd(e.changedTouches[0].clientX), { passive: true });
+  wrap.addEventListener("mousedown", (e) => onStart(e.clientX));
+  wrap.addEventListener("mouseup", (e) => onEnd(e.clientX));
+  imgEl.addEventListener("dragstart", (e) => e.preventDefault()); // 이미지 드래그 고스트 방지
+  return wrap;
 }
