@@ -107,19 +107,28 @@ async function renderInbox(root) {
       const peer = pickPeer(f);
       if (!peer.id) return;
       const sub = el("div", { class: "sub muted" }, "대화 시작하기");
+      const unreadDot = el("span", { class: "dm-unread-dot", style: { display: "none" } }, "");
       const row = el("button", { class: "dm-list-row", onclick: () => { location.hash = `#/dm/${peer.id}`; } }, [
         avatar(peer.name || `user${peer.id}`, "sm", peer.image),
         el("div", { class: "dm-list-meta" }, [
           el("div", { class: "name" }, peer.name || `user${peer.id}`),
           sub,
         ]),
+        unreadDot,
       ]);
       list.appendChild(row);
-      // 마지막 메시지 미리보기. 대화는 createdAt ASC라 마지막 원소가 최신이다.
+      // 마지막 메시지 미리보기 + 안읽음 여부. 대화는 createdAt ASC라 마지막 원소가 최신이다.
       api.get(`/messages/with/${peer.id}?page=0&size=30`).then(page => {
         const arr = page?.content ?? [];
         const last = arr[arr.length - 1];
         if (last?.message) sub.textContent = (Number(last.senderId) === Number(auth.meId) ? "나: " : "") + last.message;
+        // 상대가 보낸 안 읽은 메시지가 있으면 미읽음 점 표시 + 목록 최상단으로 이동
+        const hasUnread = arr.some(m => Number(m.receiverId) === Number(auth.meId) && m.readStatus === false);
+        if (hasUnread) {
+          unreadDot.style.display = "block";
+          row.classList.add("unread");
+          list.insertBefore(row, list.firstChild);
+        }
       }).catch(() => {});
     });
   } else {
@@ -274,6 +283,11 @@ async function renderConversation(root, peerId) {
         el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/dm"; } }, "← 목록"),
         avatar(peerName),
         el("div", { class: "name" }, peerName),
+        el("button", { class: "btn-ghost dm-conv-del", title: "대화 삭제", onclick: async () => {
+          if (!confirm("이 대화를 삭제할까요? (내 화면에서 대화 내용이 사라집니다)")) return;
+          try { await api.del(`/messages/with/${peerId}`); toast("대화를 삭제했어요."); location.hash = "#/dm"; }
+          catch (err) { toast(err.message || "삭제 실패"); }
+        }}, "🗑"),
       ]),
       list,
       el("div", { class: "dm-composer" }, [photoBtn, input, sendBtn, photoInput]),

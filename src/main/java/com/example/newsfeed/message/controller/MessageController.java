@@ -72,4 +72,13 @@ public class MessageController {
         messageService.markAsRead(id);
         return ResponseEntity.ok(new CommonResponse<>("읽음 처리 완료", Map.of("id", id)));
     }
+
+    // 상대와의 대화 전체 삭제
+    @DeleteMapping("/with/{peerId:[0-9]+}")
+    public ResponseEntity<CommonResponse<Void>> deleteConversation(@AuthenticationPrincipal UserDetailsImpl userDetails,
+                                                                   @PathVariable Long peerId) {
+        Member me = AuthenticatedMemberUtil.getMember(userDetails);
+        messageService.deleteConversation(me.getId(), peerId);
+        return ResponseEntity.ok(new CommonResponse<>("대화 삭제 완료", null));
+    }
 }

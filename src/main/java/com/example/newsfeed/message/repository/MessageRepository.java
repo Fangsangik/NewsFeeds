@@ -25,4 +25,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
             "   OR (m.sender.id = :peer AND m.receiver.id = :me) " +
             "ORDER BY m.createdAt ASC")
     Page<Message> findConversation(Long me, Long peer, Pageable pageable);
+
+    // 나와 상대 사이의 모든 메시지 삭제 (대화 삭제)
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true)
+    @Query("delete from Message m where (m.sender.id = :me and m.receiver.id = :peer) " +
+            "or (m.sender.id = :peer and m.receiver.id = :me)")
+    int deleteConversation(@org.springframework.data.repository.query.Param("me") Long me,
+                           @org.springframework.data.repository.query.Param("peer") Long peer);
 }
