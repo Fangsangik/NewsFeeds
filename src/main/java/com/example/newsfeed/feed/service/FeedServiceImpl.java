@@ -27,11 +27,15 @@ public class FeedServiceImpl implements FeedService {
     private final FeedRepository feedRepository;
     private final MemberRepository memberRepository;
     private final KakaoGeocodingService kakaoGeocodingService;
+    private final com.example.newsfeed.block.repository.BlockRepository blockRepository;
 
-    public FeedServiceImpl(FeedRepository feedRepository, MemberRepository memberRepository, KakaoGeocodingService kakaoGeocodingService) {
+    public FeedServiceImpl(FeedRepository feedRepository, MemberRepository memberRepository,
+                           KakaoGeocodingService kakaoGeocodingService,
+                           com.example.newsfeed.block.repository.BlockRepository blockRepository) {
         this.feedRepository = feedRepository;
         this.memberRepository = memberRepository;
         this.kakaoGeocodingService = kakaoGeocodingService;
+        this.blockRepository = blockRepository;
     }
 
     @Transactional
@@ -98,7 +102,10 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     public Page<FeedWithLikeCountDto> getFollowingFeed(Long memberId, int page, int size) {
-        return feedRepository.findFollowingFeed(memberId, PageRequest.of(page, size));
+        // 차단한 회원 제외. 빈 리스트면 NOT IN () 오류가 나므로 sentinel(-1)을 넣는다.
+        List<Long> blocked = new java.util.ArrayList<>(blockRepository.blockedIds(memberId));
+        if (blocked.isEmpty()) blocked.add(-1L);
+        return feedRepository.findFollowingFeed(memberId, blocked, PageRequest.of(page, size));
     }
 
     @Override

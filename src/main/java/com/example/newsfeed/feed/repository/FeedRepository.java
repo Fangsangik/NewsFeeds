@@ -27,14 +27,16 @@ public interface FeedRepository extends JpaRepository<Feed, Long> {
             "FROM Feed f LEFT JOIN f.likes l GROUP BY f.id, f.title, f.content, f.image, f.member.id, f.member.name ORDER BY f.id DESC")
     Page<FeedWithLikeCountDto> findAllFeedsOrderByLatest(Pageable pageable);
 
-    // 팔로우(친구) 기반 피드: 내 글 + 수락된 친구들의 글, 최신순
+    // 팔로우(친구) 기반 피드: 내 글 + 수락된 친구들의 글, 최신순. 차단한 회원(:blocked) 제외.
+    // blocked가 비어있지 않게 서비스에서 sentinel(-1) 하나를 넣어 NOT IN () 문법 오류를 방지한다.
     @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, f.member.id, f.member.name, COUNT(l)) " +
             "FROM Feed f LEFT JOIN f.likes l " +
-            "WHERE f.member.id = :me OR f.member.id IN (" +
+            "WHERE (f.member.id = :me OR f.member.id IN (" +
             "  SELECT CASE WHEN fr.sender.id = :me THEN fr.receiver.id ELSE fr.sender.id END FROM Friend fr " +
-            "  WHERE (fr.sender.id = :me OR fr.receiver.id = :me) AND fr.status = com.example.newsfeed.friend.type.FriendRequestStatus.ACCEPTED) " +
+            "  WHERE (fr.sender.id = :me OR fr.receiver.id = :me) AND fr.status = com.example.newsfeed.friend.type.FriendRequestStatus.ACCEPTED)) " +
+            "AND f.member.id NOT IN :blocked " +
             "GROUP BY f.id, f.title, f.content, f.image, f.member.id, f.member.name ORDER BY f.id DESC")
-    Page<FeedWithLikeCountDto> findFollowingFeed(@Param("me") Long me, Pageable pageable);
+    Page<FeedWithLikeCountDto> findFollowingFeed(@Param("me") Long me, @Param("blocked") java.util.List<Long> blocked, Pageable pageable);
 
     // 게시물 검색 (제목/내용 부분일치, 해시태그 포함) — 최신순
     @Query("SELECT new com.example.newsfeed.feed.dto.FeedWithLikeCountDto(f.id, f.title, f.content, f.image, f.member.id, f.member.name, COUNT(l)) " +
