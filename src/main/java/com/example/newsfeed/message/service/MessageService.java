@@ -58,7 +58,17 @@ public class MessageService {
     public void markAsRead(Long messageId) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new NotFoundException(NOT_FOUND_MESSAGE));
+        if (message.isReadStatus()) return; // 이미 읽음이면 중복 푸시 방지
         message.setReadStatus(true);
+        // 발신자에게 '읽음' 실시간 푸시 (접속 중이면 즉시 '읽음' 표시)
+        try {
+            Long senderId = message.getSender().getId();
+            Long peerId = message.getReceiver().getId(); // 읽은 사람(= 발신자 입장에선 대화 상대)
+            messagingTemplate.convertAndSendToUser(String.valueOf(senderId), "/queue/read",
+                    java.util.Map.of("messageId", messageId, "peerId", peerId));
+        } catch (Exception e) {
+            log.warn("읽음 푸시 실패(무시): {}", e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)

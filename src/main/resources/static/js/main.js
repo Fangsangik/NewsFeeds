@@ -10,6 +10,14 @@ import { el } from "./ui.js";
 import { api } from "./api.js";
 
 const root = document.getElementById("app");
+let notiBadgeEl = null;
+
+// 실시간 알림 도착 → 🔔 뱃지 갱신 + 토스트 (한 번만 등록)
+window.addEventListener("nf:notification", (e) => {
+  if (notiBadgeEl) updateNotiBadge(notiBadgeEl);
+  const msg = e.detail?.message;
+  if (msg) import("./ui.js").then(m => m.toast(`🔔 ${msg}`)).catch(() => {});
+});
 
 async function updateUnreadBadge(badge) {
   if (!auth.isLoggedIn) return;
@@ -50,6 +58,7 @@ function buildTopbar() {
         })(),
         (() => {
           const badge = el("span", { class: "nav-badge", style: { display: "none" } }, "");
+          notiBadgeEl = badge; // 실시간 알림 이벤트로 갱신하기 위해 참조 보관
           const btn = el("button", { class: "icon-btn badge-wrap", title: "알림", onclick: () => { location.hash = "#/notifications"; } }, ["🔔", badge]);
           updateNotiBadge(badge);
           return btn;

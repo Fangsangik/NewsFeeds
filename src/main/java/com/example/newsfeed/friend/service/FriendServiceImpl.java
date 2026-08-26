@@ -162,6 +162,57 @@ public class FriendServiceImpl implements FriendService {
         friendRepository.findBetween(meId, otherId).forEach(friendRepository::delete);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public long countFriends(Long memberId) {
+        return friendRepository.countAcceptedFriends(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto> friendMembers(Long memberId) {
+        java.util.List<Long> ids = friendRepository.findAcceptedFriendMemberIds(memberId);
+        return memberRepository.findAllById(ids).stream()
+                .map(com.example.newsfeed.friend.dto.FriendMemberDto::new)
+                .toList();
+    }
+
+    /**
+     * 팔로우 추천(알 수도 있는 사람): 내 친구들의 친구를 모아, 나와 아직 안 엮인 사람을
+     * 공통 친구 수 많은 순으로 반환. (앱 레벨 계산 — JPQL로 짜기 까다로운 부분)
+     */
+    @Transactional(readOnly = true)
+    @Override
+    public java.util.List<com.example.newsfeed.friend.dto.FriendSuggestionDto> suggestions(Long memberId, int limit) {
+        java.util.List<Long> myFriends = friendRepository.findAcceptedFriendMemberIds(memberId);
+        java.util.Set<Long> exclude = new java.util.HashSet<>(friendRepository.findRelatedMemberIds(memberId));
+        exclude.add(memberId);
+
+        // 친구들의 친구를 모아 등장 횟수(=공통 친구 수) 집계
+        java.util.Map<Long, Long> counts = new java.util.HashMap<>();
+        for (Long fid : myFriends) {
+            for (Long fof : friendRepository.findAcceptedFriendMemberIds(fid)) {
+                if (exclude.contains(fof)) continue;
+                counts.merge(fof, 1L, Long::sum);
+            }
+        }
+        if (counts.isEmpty()) return java.util.List.of();
+
+        java.util.List<Long> topIds = counts.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .limit(limit)
+                .map(java.util.Map.Entry::getKey)
+                .toList();
+
+        java.util.Map<Long, com.example.newsfeed.member.entity.Member> byId = memberRepository.findAllById(topIds).stream()
+                .collect(java.util.stream.Collectors.toMap(com.example.newsfeed.member.entity.Member::getId, m -> m));
+        return topIds.stream()
+                .map(id -> byId.get(id))
+                .filter(java.util.Objects::nonNull)
+                .map(m -> new com.example.newsfeed.friend.dto.FriendSuggestionDto(m, counts.get(m.getId())))
+                .toList();
+    }
+
     private boolean isAlreadyFriend(Member sender, Member receiver) {
         return friendRepository.existsBySenderAndReceiver(sender, receiver)
                 || friendRepository.existsBySenderAndReceiver(receiver, sender);

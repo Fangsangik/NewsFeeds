@@ -32,6 +32,20 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     @Query("select f from Friend f where (f.sender.id = :a and f.receiver.id = :b) or (f.sender.id = :b and f.receiver.id = :a)")
     java.util.List<Friend> findBetween(@Param("a") Long a, @Param("b") Long b);
 
+    // 특정 회원의 수락된 친구 수 (상호 모델 → 팔로워=팔로잉)
+    @Query("select count(f) from Friend f where (f.sender.id = :m or f.receiver.id = :m) and f.status = com.example.newsfeed.friend.type.FriendRequestStatus.ACCEPTED")
+    long countAcceptedFriends(@Param("m") Long m);
+
+    // 특정 회원의 수락된 친구(상대방) id 목록. (CASE는 엔티티 반환 불가 → 스칼라 id만)
+    @Query("select case when f.sender.id = :m then f.receiver.id else f.sender.id end from Friend f " +
+            "where (f.sender.id = :m or f.receiver.id = :m) and f.status = com.example.newsfeed.friend.type.FriendRequestStatus.ACCEPTED")
+    java.util.List<Long> findAcceptedFriendMemberIds(@Param("m") Long m);
+
+    // 나와 어떤 형태로든(요청/수락) 엮여 있는 회원 id (추천에서 제외용)
+    @Query("select case when f.sender.id = :m then f.receiver.id else f.sender.id end from Friend f " +
+            "where f.sender.id = :m or f.receiver.id = :m")
+    java.util.List<Long> findRelatedMemberIds(@Param("m") Long m);
+
     default Friend findByIdOrElseThrow(Long friendId) {
         return findById(friendId).orElseThrow(() -> new NotFoundException(ErrorCode.NOT_FOUND_FRIEND_REQUEST));
     }

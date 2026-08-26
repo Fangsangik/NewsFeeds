@@ -54,6 +54,31 @@ async function loadFriends(body) {
     body.innerHTML = "";
     body.appendChild(el("div", { class: "empty" }, "친구 목록을 가져오지 못했어요."));
   }
+  // 팔로우 추천(알 수도 있는 사람)
+  loadSuggestions(body);
+}
+
+async function loadSuggestions(body) {
+  try {
+    const list = await api.get("/friends/suggestions?limit=10");
+    if (!list?.length) return;
+    body.appendChild(el("div", { class: "suggest-title" }, "알 수도 있는 사람"));
+    list.forEach(s => {
+      const card = el("div", { class: "friend-card" }, [
+        (() => { const a = avatar(s.name || `user${s.id}`, "sm", s.image); a.style.cursor = "pointer"; a.addEventListener("click", () => { location.hash = `#/profile/${s.id}`; }); return a; })(),
+        el("div", { class: "friend-meta", style: { cursor: "pointer" }, onclick: () => { location.hash = `#/profile/${s.id}`; } }, [
+          el("div", { class: "name" }, s.name || `user${s.id}`),
+          el("div", { class: "sub muted" }, `공통 친구 ${s.mutual}명`),
+        ]),
+        el("button", { class: "btn-primary friend-request", onclick: async (e) => {
+          const btn = e.currentTarget; btn.disabled = true;
+          try { await api.post("/friends", { receiverId: s.id }); btn.textContent = "요청됨"; }
+          catch (err) { toast(err.message || "요청 실패"); btn.disabled = false; }
+        }}, "친구 요청"),
+      ]);
+      body.appendChild(card);
+    });
+  } catch (e) { /* 추천 실패는 조용히 무시 */ }
 }
 
 function friendRow(f) {
