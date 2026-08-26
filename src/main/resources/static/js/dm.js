@@ -34,6 +34,15 @@ export function connectStomp() {
         console.warn("bad STOMP frame", e);
       }
     });
+    // 실시간 알림: 도착 시 전역 이벤트 발행 → 토픽바 🔔 뱃지가 갱신된다.
+    stompClient.subscribe("/user/queue/notifications", (frame) => {
+      try {
+        const payload = JSON.parse(frame.body);
+        window.dispatchEvent(new CustomEvent("nf:notification", { detail: payload }));
+      } catch (e) {
+        console.warn("bad notification frame", e);
+      }
+    });
   };
   stompClient.onStompError = (frame) => console.warn("STOMP error", frame.headers?.message);
   stompClient.activate();
@@ -220,6 +229,22 @@ async function renderConversation(root, peerId) {
     }
   }
 
+  // 사진 전송: 업로드한 이미지 URL을 메시지 내용으로 보낸다. (수신측이 URL이면 이미지로 렌더)
+  const photoInput = el("input", { type: "file", accept: "image/*", style: { display: "none" }, onchange: async (e) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    photoBtn.disabled = true;
+    try {
+      const r = await api.uploadImage(f);
+      if (!r?.url) throw new Error("업로드 실패");
+      const dto = await api.post("/messages", { receiverId: Number(peerId), content: r.url });
+      appendMessage(list, dto);
+      list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
+    } catch (err) { toast(err.message || "사진 전송 실패"); }
+    finally { photoBtn.disabled = false; }
+  }});
+  const photoBtn = el("button", { class: "dm-photo", title: "사진 보내기", onclick: () => photoInput.click() }, "📷");
+
   root.appendChild(
     el("section", { class: "dm-conv" }, [
       el("div", { class: "dm-conv-head" }, [
@@ -228,19 +253,28 @@ async function renderConversation(root, peerId) {
         el("div", { class: "name" }, peerName),
       ]),
       list,
-      el("div", { class: "dm-composer" }, [input, sendBtn]),
+      el("div", { class: "dm-composer" }, [photoBtn, input, sendBtn, photoInput]),
     ])
   );
 
   setTimeout(() => input.focus(), 0);
 }
 
+function isImageUrl(s) {
+  return typeof s === "string" && /^\/uploads\/.*\.(png|jpe?g|gif|webp)$/i.test(s);
+}
+
 function messageRow(m) {
   const me = Number(auth.meId);
   const mine = Number(m.senderId) === me;
+  const body = isImageUrl(m.message)
+    ? el("img", { class: "dm-image", src: m.message, alt: "사진", onclick: () => window.open(m.message, "_blank") })
+    : el("div", { class: "dm-bubble" }, m.message || "");
+  const meta = [el("span", { class: "dm-time muted" }, fmtTimeAgo(m.createdAt) || "")];
+  if (mine && m.readStatus) meta.unshift(el("span", { class: "dm-read" }, "읽음"));
   const node = el("div", { class: `dm-msg ${mine ? "mine" : "theirs"}` }, [
-    el("div", { class: "dm-bubble" }, m.message || ""),
-    el("div", { class: "dm-time muted" }, fmtTimeAgo(m.createdAt) || ""),
+    body,
+    el("div", { class: "dm-meta" }, meta),
   ]);
   if (m.id != null) node.dataset.mid = String(m.id);
   return node;
