@@ -838,3 +838,20 @@ input, textarea {
 .explore-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
 .explore-cell { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #efefef; display: block; }
 .explore-cell.placeholder { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 28px; }
+
+/* ---------- R2: 홈 추천 + DM 미읽음/삭제 ---------- */
+.home-suggest { margin: 0 0 16px; }
+.home-suggest-title { font-weight: 600; margin: 4px 4px 8px; }
+.home-suggest-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.suggest-card {
+  flex: 0 0 130px; border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--surface);
+}
+.suggest-name { font-weight: 600; font-size: 13px; }
+.suggest-mutual { font-size: 11px; }
+.suggest-follow { width: 100%; margin-top: 4px; padding: 6px 0; font-size: 12px; }
+
+.dm-list-row { position: relative; }
+.dm-list-row.unread .name { font-weight: 700; }
+.dm-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-left: auto; }
+.dm-conv-del { margin-left: auto; }

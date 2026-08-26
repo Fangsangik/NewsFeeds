@@ -28,6 +28,12 @@ export async function renderHome(root) {
   const list = el("div", { class: "feed-list" });
   const sentinel = el("div", { class: "center muted", style: { padding: "16px" } }, "");
   root.appendChild(tabs);
+  // 팔로잉 탭에서만 상단에 '알 수도 있는 사람' 가로 추천 카드
+  if (currentSort === "following" && auth.isLoggedIn) {
+    const rec = el("div", { class: "home-suggest" });
+    root.appendChild(rec);
+    renderHomeSuggestions(rec);
+  }
   root.appendChild(list);
   root.appendChild(sentinel);
 
@@ -345,4 +351,28 @@ export async function renderExplore(root) {
   } catch (err) {
     grid.appendChild(el("div", { class: "empty" }, `불러오기 실패: ${err.message}`));
   }
+}
+
+// ---------------- 홈 팔로우 추천 (가로 카드) ----------------
+async function renderHomeSuggestions(container) {
+  try {
+    const list = await api.get("/friends/suggestions?limit=8");
+    if (!list?.length) { container.remove?.(); return; }
+    container.appendChild(el("div", { class: "home-suggest-title" }, "알 수도 있는 사람"));
+    const row = el("div", { class: "home-suggest-row" });
+    list.forEach(s => {
+      const card = el("div", { class: "suggest-card" }, [
+        (() => { const a = avatar(s.name || `user${s.id}`, "lg", s.image); a.style.cursor = "pointer"; a.addEventListener("click", () => { location.hash = `#/profile/${s.id}`; }); return a; })(),
+        el("div", { class: "suggest-name", onclick: () => { location.hash = `#/profile/${s.id}`; }, style: { cursor: "pointer" } }, s.name || `user${s.id}`),
+        el("div", { class: "suggest-mutual muted" }, `공통 ${s.mutual}명`),
+        el("button", { class: "btn-primary suggest-follow", onclick: async (e) => {
+          const b = e.currentTarget; b.disabled = true;
+          try { await api.post("/friends", { receiverId: s.id }); b.textContent = "요청됨"; }
+          catch (err) { toast(err.message || "요청 실패"); b.disabled = false; }
+        }}, "친구 요청"),
+      ]);
+      row.appendChild(card);
+    });
+    container.appendChild(row);
+  } catch (e) { container.remove?.(); }
 }
