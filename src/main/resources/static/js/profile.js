@@ -41,8 +41,14 @@ export async function renderProfile(root, memberId) {
 function buildHeader(name, count, isMe, image, memberId, member) {
   let actions;
   if (isMe) {
+    // 비공개 토글: 현재 상태 반영
+    const privBtn = el("button", { class: "btn-ghost", onclick: async () => {
+      try { const r = await api.patch("/members/privacy"); privBtn.textContent = r?.isPrivate ? "비공개 ✓" : "비공개"; toast(r?.isPrivate ? "비공개 계정으로 전환" : "공개 계정으로 전환"); }
+      catch (e) { toast(e.message || "실패"); }
+    }}, (member && member.isPrivate) ? "비공개 ✓" : "비공개");
     actions = [
       el("button", { class: "btn-ghost", onclick: () => openProfileEditor(memberId, member) }, "프로필 편집"),
+      privBtn,
       el("button", { class: "btn-ghost", onclick: () => { location.hash = "#/"; } }, "홈으로"),
     ];
   } else {
@@ -61,6 +67,20 @@ function buildHeader(name, count, isMe, image, memberId, member) {
       else if (st === "requested_to_me") { rel.textContent = "요청 수락"; rel.classList.add("accent"); rel.onclick = async () => { try { await api.patch("/friends/accept", { senderId: memberId }); toast("친구가 되었어요."); reload(); } catch (e) { toast(e.message || "실패"); } }; }
       else { rel.textContent = "친구 요청"; rel.classList.add("accent"); rel.onclick = async () => { try { await api.post("/friends", { receiverId: memberId }); toast("친구 요청을 보냈어요."); reload(); } catch (e) { toast(e.message || "실패"); } }; }
     }).catch(() => { rel.textContent = "친구 요청"; rel.disabled = false; });
+
+    // 차단 토글 + 신고
+    const blockBtn = el("button", { class: "btn-ghost", onclick: async () => {
+      try { const r = await api.post(`/blocks/${memberId}`); blockBtn.textContent = r?.blocked ? "차단 해제" : "차단"; toast(r?.blocked ? "차단했어요." : "차단을 해제했어요."); }
+      catch (e) { toast(e.message || "실패"); }
+    }}, "차단");
+    api.get(`/blocks/${memberId}`).then(r => { if (r?.blocked) blockBtn.textContent = "차단 해제"; }).catch(() => {});
+    box.appendChild(blockBtn);
+    box.appendChild(el("button", { class: "btn-ghost", onclick: async () => {
+      const reason = prompt("신고 사유를 입력하세요 (선택)");
+      if (reason === null) return;
+      try { await api.post("/reports", { targetType: "MEMBER", targetId: memberId, reason }); toast("신고가 접수되었습니다."); }
+      catch (e) { toast(e.message || "실패"); }
+    }}, "신고"));
   }
   return el("section", { class: "profile-head" }, [
     el("div", { class: "profile-avatar" }, avatar(name, "lg", image)),

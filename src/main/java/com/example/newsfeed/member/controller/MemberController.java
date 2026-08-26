@@ -16,9 +16,22 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
 
     private final MemberService memberService;
+    private final com.example.newsfeed.member.repository.MemberRepository memberRepository;
 
-    public MemberController(MemberService memberService) {
+    public MemberController(MemberService memberService,
+                            com.example.newsfeed.member.repository.MemberRepository memberRepository) {
         this.memberService = memberService;
+        this.memberRepository = memberRepository;
+    }
+
+    // 비공개 계정 토글
+    @org.springframework.transaction.annotation.Transactional
+    @PatchMapping("/privacy")
+    public ResponseEntity<CommonResponse<java.util.Map<String, Object>>> togglePrivacy() {
+        Long me = AuthenticatedMemberUtil.getAuthenticatedMemberId();
+        Member m = memberRepository.findByIdOrElseThrow(me);
+        m.setPrivate(!m.isPrivate());
+        return ResponseEntity.ok(new CommonResponse<>("공개범위 변경", java.util.Map.of("isPrivate", m.isPrivate())));
     }
 
     @GetMapping("/search")

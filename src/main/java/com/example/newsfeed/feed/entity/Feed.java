@@ -77,6 +77,14 @@ public class Feed extends BaseEntity {
         }
     }
 
+    /** 이미지 목록 교체(수정 시). null이면 변경하지 않음, 빈 리스트면 이미지 제거. 커버=첫 장. */
+    public void replaceImages(java.util.List<String> newImages) {
+        if (newImages == null) return;
+        this.images.clear();
+        this.images.addAll(newImages);
+        this.image = newImages.isEmpty() ? null : newImages.get(0);
+    }
+
     public int getLikeCount() {
         return likes.size();
     }

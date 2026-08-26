@@ -29,6 +29,10 @@ public class Member extends BaseEntity {
     private int age;
     private String image;
 
+    // 비공개 계정: true면 친구(수락된)만 게시물 조회 가능
+    @Column(nullable = false)
+    private boolean isPrivate = false;
+
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
@@ -73,6 +77,10 @@ public class Member extends BaseEntity {
     }
 
     public Member() {
+    }
+
+    public void setPrivate(boolean isPrivate) {
+        this.isPrivate = isPrivate;
     }
 
     public Member(Long memberId) {

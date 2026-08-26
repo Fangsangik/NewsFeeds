@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { auth, likes } from "./store.js";
 import { el, avatar, toast, linkify } from "./ui.js";
+import { openComposer } from "./feed.js";
 
 export async function renderDetail(root, feedId) {
   root.innerHTML = "";
@@ -36,7 +37,8 @@ function buildView(feedId, feed, likeData, comments) {
   likes.set(feedId, liked);
   const isMine = auth.meId && author?.id && Number(auth.meId) === Number(author.id);
 
-  const likeCountEl = el("div", { class: "like-count" }, `좋아요 ${likeData?.likeCount ?? 0}개`);
+  const likeCountEl = el("div", { class: "like-count clickable", style: { cursor: "pointer" },
+    onclick: () => openLikers(feedId) }, `좋아요 ${likeData?.likeCount ?? 0}개`);
   const heart = el("button", {
     class: `heart ${liked ? "on" : ""}`,
     onclick: () => onLike(feedId, heart, likeCountEl),
@@ -91,16 +93,11 @@ function buildView(feedId, feed, likeData, comments) {
   }
   captionRow.classList.add("caption");
 
-  async function editFeed() {
-    const newTitle = prompt("제목 수정", feed?.title || "");
-    if (newTitle === null) return;
-    const newContent = prompt("내용 수정", feed?.content || "");
-    if (newContent === null) return;
-    try {
-      await api.patch(`/feeds/${feedId}`, { title: newTitle, content: newContent });
-      toast("수정되었습니다.");
-      renderDetail(document.getElementById("app"), feedId);
-    } catch (err) { toast(err.message || "수정 실패"); }
+  function editFeed() {
+    const imgs = (feed?.images && feed.images.length) ? feed.images : (feed?.image ? [feed.image] : []);
+    openComposer(() => renderDetail(document.getElementById("app"), feedId), {
+      feedId, title: feed?.title, content: feed?.content, address: feed?.address, images: imgs,
+    });
   }
 
   async function deleteFeed() {
@@ -183,6 +180,27 @@ function commentRow(c, isChild, feedId, refresh) {
     el("span", { class: "name" }, who),
     el("span", { class: "text" }, linkify(c.content || "")),
   ]);
+
+  // 댓글 좋아요(♥) — 낙관적 토글 + 서버 응답으로 확정
+  let liked = !!c.likedByMe;
+  let cnt = Number(c.likeCount || 0);
+  const cLikeCount = el("span", { class: "clike-count" }, cnt ? String(cnt) : "");
+  const cHeart = el("button", { class: `clike ${liked ? "on" : ""}`, title: "좋아요", onclick: async () => {
+    if (!auth.isLoggedIn) { location.hash = "#/login"; return; }
+    liked = !liked; cnt = Math.max(0, cnt + (liked ? 1 : -1));
+    cHeart.classList.toggle("on", liked); cHeart.textContent = liked ? "♥" : "♡";
+    cLikeCount.textContent = cnt ? String(cnt) : "";
+    try {
+      const r = await api.post(`/comment-likes/${c.commentId}`);
+      if (r && typeof r.liked === "boolean") {
+        liked = r.liked; cnt = Number(r.count || 0);
+        cHeart.classList.toggle("on", liked); cHeart.textContent = liked ? "♥" : "♡";
+        cLikeCount.textContent = cnt ? String(cnt) : "";
+      }
+    } catch (err) { toast(err.message || "좋아요 실패"); }
+  }}, liked ? "♥" : "♡");
+  meta.appendChild(el("div", { class: "clike-row" }, [cHeart, cLikeCount]));
+
   const row = el("div", { class: `comment ${isChild ? "child" : ""}` }, [avatar(who), meta]);
 
   // 내 댓글이면 삭제 버튼
@@ -289,4 +307,34 @@ function buildMedia(imgs, alt) {
   wrap.addEventListener("mouseup", (e) => onEnd(e.clientX));
   imgEl.addEventListener("dragstart", (e) => e.preventDefault()); // 이미지 드래그 고스트 방지
   return wrap;
+}
+
+// 좋아요한 사람 목록 모달
+async function openLikers(feedId) {
+  const listEl = el("div", { class: "friend-modal-list" }, el("div", { class: "muted center", style: { padding: "20px" } }, "불러오는 중..."));
+  const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) backdrop.remove(); } });
+  backdrop.appendChild(el("div", { class: "modal small" }, [
+    el("div", { class: "modal-head" }, [
+      el("button", { onclick: () => backdrop.remove(), title: "닫기" }, "✕"),
+      el("span", {}, "좋아요"),
+      el("span", {}, ""),
+    ]),
+    listEl,
+  ]));
+  document.body.appendChild(backdrop);
+  try {
+    const members = await api.get(`/likes/${feedId}/members`);
+    listEl.innerHTML = "";
+    if (!members?.length) { listEl.appendChild(el("div", { class: "empty" }, "아직 좋아요가 없어요.")); return; }
+    members.forEach(m => {
+      const row = el("button", { class: "friend-modal-row", onclick: () => { backdrop.remove(); location.hash = `#/profile/${m.id}`; } }, [
+        avatar(m.name || `user${m.id}`, "sm", m.image),
+        el("div", { class: "name" }, m.name || `user${m.id}`),
+      ]);
+      listEl.appendChild(row);
+    });
+  } catch (e) {
+    listEl.innerHTML = "";
+    listEl.appendChild(el("div", { class: "empty" }, "목록을 가져오지 못했어요."));
+  }
 }

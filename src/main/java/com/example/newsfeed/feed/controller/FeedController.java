@@ -21,9 +21,15 @@ import java.util.List;
 public class FeedController {
 
     private final FeedService feedService;
+    private final com.example.newsfeed.member.repository.MemberRepository memberRepository;
+    private final com.example.newsfeed.friend.service.FriendService friendService;
 
-    public FeedController(FeedService feedService) {
+    public FeedController(FeedService feedService,
+                          com.example.newsfeed.member.repository.MemberRepository memberRepository,
+                          com.example.newsfeed.friend.service.FriendService friendService) {
         this.feedService = feedService;
+        this.memberRepository = memberRepository;
+        this.friendService = friendService;
     }
 
     @PostMapping
@@ -46,7 +52,16 @@ public class FeedController {
     // 회원 기반 피드 조회
     @GetMapping("/members/{memberId}")
     public ResponseEntity<CommonResponse<List<FeedResponseDto>>> getFeedsByMemberId(@PathVariable Long memberId) {
-
+        // 비공개 계정이면 본인/친구만 조회 가능. 아니면 빈 목록.
+        boolean target = memberRepository.findById(memberId).map(com.example.newsfeed.member.entity.Member::isPrivate).orElse(false);
+        if (target) {
+            Long viewer = AuthenticatedMemberUtil.getAuthenticatedMemberIdOrNull();
+            boolean allowed = viewer != null && (viewer.equals(memberId)
+                    || "friends".equals(friendService.statusWith(viewer, memberId)));
+            if (!allowed) {
+                return ResponseEntity.ok(new CommonResponse<>("비공개 계정입니다.", List.of()));
+            }
+        }
         List<FeedResponseDto> feeds = feedService.getFeedsByMemberId(memberId);
         return ResponseEntity.ok(new CommonResponse<>("회원 기반 피드 조회 완료", feeds));
     }

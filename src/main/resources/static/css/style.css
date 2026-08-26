@@ -828,3 +828,30 @@ input, textarea {
 
 /* 팔로우 추천 */
 .suggest-title { margin: 18px 14px 8px; font-weight: 600; color: var(--text); border-top: 1px solid var(--border); padding-top: 14px; }
+
+/* ---------- R1: 댓글 좋아요 + 탐색 그리드 ---------- */
+.clike-row { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.clike { font-size: 15px; line-height: 1; color: var(--text-muted); cursor: pointer; }
+.clike.on { color: var(--danger); }
+.clike-count { font-size: 12px; color: var(--text-muted); }
+
+.explore-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.explore-cell { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #efefef; display: block; }
+.explore-cell.placeholder { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 28px; }
+
+/* ---------- R2: 홈 추천 + DM 미읽음/삭제 ---------- */
+.home-suggest { margin: 0 0 16px; }
+.home-suggest-title { font-weight: 600; margin: 4px 4px 8px; }
+.home-suggest-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.suggest-card {
+  flex: 0 0 130px; border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--surface);
+}
+.suggest-name { font-weight: 600; font-size: 13px; }
+.suggest-mutual { font-size: 11px; }
+.suggest-follow { width: 100%; margin-top: 4px; padding: 6px 0; font-size: 12px; }
+
+.dm-list-row { position: relative; }
+.dm-list-row.unread .name { font-weight: 700; }
+.dm-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-left: auto; }
+.dm-conv-del { margin-left: auto; }

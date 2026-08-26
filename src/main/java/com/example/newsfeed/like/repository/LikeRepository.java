@@ -17,4 +17,8 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     @Modifying(clearAutomatically = true)
     @Query("delete from Like l where l.feed.id = :feedId and l.member.id = :memberId")
     int deleteByFeedAndMember(@Param("feedId") Long feedId, @Param("memberId") Long memberId);
+
+    // 특정 피드를 좋아요한 회원 id 목록 (최근 순)
+    @Query("select l.member.id from Like l where l.feed.id = :feedId order by l.id desc")
+    java.util.List<Long> findLikerMemberIds(@Param("feedId") Long feedId);
 }

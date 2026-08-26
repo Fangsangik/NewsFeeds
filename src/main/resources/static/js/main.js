@@ -1,6 +1,6 @@
 import { auth } from "./store.js";
 import { renderLogin, renderSignup, logout } from "./auth.js";
-import { renderHome, openComposer, renderSearch, renderSaved } from "./feed.js";
+import { renderHome, openComposer, renderSearch, renderSaved, renderExplore } from "./feed.js";
 import { renderDetail } from "./detail.js";
 import { renderProfile } from "./profile.js";
 import { renderDm, connectStomp, disconnectStomp } from "./dm.js";
@@ -49,6 +49,7 @@ function buildTopbar() {
         el("button", { class: "icon-btn", title: "새 게시물", onclick: () => openComposer(() => route()) }, "＋"),
         el("button", { class: "icon-btn", title: "홈", onclick: () => { location.hash = "#/"; } }, "🏠"),
         el("button", { class: "icon-btn", title: "검색", onclick: () => { location.hash = "#/search"; } }, "🔍"),
+        el("button", { class: "icon-btn", title: "탐색", onclick: () => { location.hash = "#/explore"; } }, "🧭"),
         el("button", { class: "icon-btn", title: "저장한 게시물", onclick: () => { location.hash = "#/saved"; } }, "🔖"),
         (() => {
           const badge = el("span", { class: "nav-badge", style: { display: "none" } }, "");
@@ -107,6 +108,8 @@ function route() {
   if (hash === "#/friends" || hash.startsWith("#/friends/")) return renderFriends(root);
 
   if (hash === "#/saved") return renderSaved(root);
+
+  if (hash === "#/explore") return renderExplore(root);
 
   if (hash === "#/notifications") return renderNotifications(root);
 

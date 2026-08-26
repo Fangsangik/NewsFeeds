@@ -26,14 +26,17 @@ public class CommentServiceImpl implements CommentService {
     private final FeedRepository feedRepository;
     private final MemberRepository memberRepository;
     private final com.example.newsfeed.notification.service.NotificationService notificationService;
+    private final com.example.newsfeed.comment.repository.CommentLikeRepository commentLikeRepository;
 
     public CommentServiceImpl(CommentRepository commentRepository, FeedRepository feedRepository,
                               MemberRepository memberRepository,
-                              com.example.newsfeed.notification.service.NotificationService notificationService) {
+                              com.example.newsfeed.notification.service.NotificationService notificationService,
+                              com.example.newsfeed.comment.repository.CommentLikeRepository commentLikeRepository) {
         this.commentRepository = commentRepository;
         this.feedRepository = feedRepository;
         this.memberRepository = memberRepository;
         this.notificationService = notificationService;
+        this.commentLikeRepository = commentLikeRepository;
     }
 
     @Transactional
@@ -63,6 +66,17 @@ public class CommentServiceImpl implements CommentService {
                 com.example.newsfeed.notification.entity.Notification.Type.COMMENT,
                 member.getId(), actorName, feed.getId(),
                 actorName + "님이 회원님의 게시물에 댓글을 남겼습니다.");
+
+        // 답글이면 부모 댓글 작성자에게도 알림 (게시물 작성자와 중복이면 notify가 걸러줌은 아니므로 다를 때만)
+        if (parentComment != null && parentComment.getMember() != null) {
+            Long parentAuthorId = parentComment.getMember().getId();
+            if (!parentAuthorId.equals(feed.getMember().getId())) {
+                notificationService.notify(parentAuthorId,
+                        com.example.newsfeed.notification.entity.Notification.Type.COMMENT,
+                        member.getId(), actorName, feed.getId(),
+                        actorName + "님이 회원님의 댓글에 답글을 남겼습니다.");
+            }
+        }
 
         // ResponseDto 반환
         return CommentResponseDto.toDto(savedComment);
@@ -130,10 +144,45 @@ public class CommentServiceImpl implements CommentService {
         List<Comment> comments = commentRepository.findByFeedId(feedId);
 
         // 부모 댓글만 필터링하고 대댓글 계층 포함
-        return comments.stream()
-                .filter(comment -> comment.getParent() == null) // 부모가 없는 댓글만 필터링
+        List<CommentResponseDto> dtos = comments.stream()
+                .filter(comment -> comment.getParent() == null)
                 .map(CommentResponseDto::toDto)
                 .toList();
+
+        fillLikeInfo(dtos);
+        return dtos;
+    }
+
+    /** 댓글(+대댓글)에 좋아요 수·내 좋아요 여부를 채운다. 비로그인이면 likedByMe=false. */
+    private void fillLikeInfo(List<CommentResponseDto> dtos) {
+        List<Long> ids = new java.util.ArrayList<>();
+        collectIds(dtos, ids);
+        if (ids.isEmpty()) return;
+
+        java.util.Map<Long, Long> countMap = new java.util.HashMap<>();
+        for (Object[] row : commentLikeRepository.countByCommentIds(ids)) {
+            countMap.put((Long) row[0], (Long) row[1]);
+        }
+        Long meId = com.example.newsfeed.util.AuthenticatedMemberUtil.getAuthenticatedMemberIdOrNull();
+        java.util.Set<Long> likedIds = meId == null ? java.util.Set.of()
+                : new java.util.HashSet<>(commentLikeRepository.likedCommentIds(ids, meId));
+
+        applyLikeInfo(dtos, countMap, likedIds);
+    }
+
+    private void collectIds(List<CommentResponseDto> dtos, List<Long> out) {
+        for (CommentResponseDto d : dtos) {
+            out.add(d.getCommentId());
+            if (d.getChildComments() != null) collectIds(d.getChildComments(), out);
+        }
+    }
+
+    private void applyLikeInfo(List<CommentResponseDto> dtos, java.util.Map<Long, Long> countMap, java.util.Set<Long> likedIds) {
+        for (CommentResponseDto d : dtos) {
+            d.setLikeCount(countMap.getOrDefault(d.getCommentId(), 0L));
+            d.setLikedByMe(likedIds.contains(d.getCommentId()));
+            if (d.getChildComments() != null) applyLikeInfo(d.getChildComments(), countMap, likedIds);
+        }
     }
 
     @Transactional

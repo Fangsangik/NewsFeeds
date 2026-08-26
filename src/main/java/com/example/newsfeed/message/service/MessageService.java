@@ -71,6 +71,11 @@ public class MessageService {
         }
     }
 
+    @Transactional
+    public void deleteConversation(Long meId, Long peerId) {
+        messageRepository.deleteConversation(meId, peerId);
+    }
+
     @Transactional(readOnly = true)
     public Page<MessageRequestDto> getUnread(Long memberId, Pageable pageable) {
         return messageRepository.findAllByReceiverIdAndReadStatusFalse(memberId, pageable);

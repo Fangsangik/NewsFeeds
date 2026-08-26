@@ -28,6 +28,12 @@ export async function renderHome(root) {
   const list = el("div", { class: "feed-list" });
   const sentinel = el("div", { class: "center muted", style: { padding: "16px" } }, "");
   root.appendChild(tabs);
+  // 팔로잉 탭에서만 상단에 '알 수도 있는 사람' 가로 추천 카드
+  if (currentSort === "following" && auth.isLoggedIn) {
+    const rec = el("div", { class: "home-suggest" });
+    root.appendChild(rec);
+    renderHomeSuggestions(rec);
+  }
   root.appendChild(list);
   root.appendChild(sentinel);
 
@@ -156,16 +162,18 @@ async function onLike(item, heartEl, countEl) {
 
 // ---------------- Composer modal ----------------
 
-export function openComposer(onCreated) {
+export function openComposer(onCreated, edit = null) {
   const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => {
     if (e.target === backdrop) close();
   }});
 
-  let pickedFiles = []; // File[]
+  // items: 이미지 항목 배열. 기존 이미지는 {url}, 새로 선택한 파일은 {file}.
+  let items = edit && Array.isArray(edit.images) ? edit.images.map(u => ({ url: u })) : [];
 
-  const titleIn = el("input", { class: "title", placeholder: "제목" });
+  const titleIn = el("input", { class: "title", placeholder: "제목", value: (edit && edit.title) || "" });
   const contentIn = el("textarea", { placeholder: "문구 입력..." });
-  const addressIn = el("input", { placeholder: "위치 (선택)" });
+  if (edit && edit.content) contentIn.value = edit.content;
+  const addressIn = el("input", { placeholder: "위치 (선택)", value: (edit && edit.address) || "" });
   const errEl = el("div", { class: "error" });
 
   const fileIn = el("input", {
@@ -175,7 +183,7 @@ export function openComposer(onCreated) {
     style: { display: "none" },
     onchange: (e) => {
       const fs = [...(e.target.files || [])];
-      if (fs.length) pickedFiles.push(...fs);
+      fs.forEach(f => items.push({ file: f }));
       e.target.value = ""; // 같은 파일 다시 선택 가능하게
       renderLeft();
     },
@@ -191,12 +199,12 @@ export function openComposer(onCreated) {
 
   function renderLeft() {
     left.innerHTML = "";
-    if (pickedFiles.length) {
-      const grid = el("div", { class: "composer-thumbs" }, pickedFiles.map((f, i) => {
-        const url = URL.createObjectURL(f);
+    if (items.length) {
+      const grid = el("div", { class: "composer-thumbs" }, items.map((it, i) => {
+        const src = it.url ? it.url : URL.createObjectURL(it.file);
         return el("div", { class: "composer-thumb" }, [
-          el("img", { src: url }),
-          el("button", { class: "thumb-del", title: "제거", onclick: () => { pickedFiles.splice(i, 1); renderLeft(); } }, "✕"),
+          el("img", { src }),
+          el("button", { class: "thumb-del", title: "제거", onclick: () => { items.splice(i, 1); renderLeft(); } }, "✕"),
         ]);
       }));
       const addBtn = el("button", { class: "thumb-add", onclick: () => fileIn.click() }, "＋ 사진 추가");
@@ -214,43 +222,48 @@ export function openComposer(onCreated) {
   }
   renderLeft();
 
-  const shareBtn = el("button", { class: "share", onclick: share }, "공유");
+  const isEdit = !!edit;
+  const shareBtn = el("button", { class: "share", onclick: share }, isEdit ? "저장" : "공유");
 
   function close() { backdrop.remove(); }
 
   async function share() {
     errEl.textContent = "";
-    // 사진은 선택 항목. 제목이나 내용 중 하나만 있으면 글만으로도 게시 가능.
-    if (!titleIn.value.trim() && !contentIn.value.trim() && !pickedFiles.length) {
+    if (!titleIn.value.trim() && !contentIn.value.trim() && !items.length) {
       errEl.textContent = "제목이나 내용을 입력하거나 사진을 추가해주세요.";
       return;
     }
     shareBtn.disabled = true;
-    shareBtn.textContent = "공유 중...";
+    shareBtn.textContent = isEdit ? "저장 중..." : "공유 중...";
     try {
-      // 선택한 사진을 순서대로 업로드
+      // 기존 이미지(url)는 그대로, 새 파일은 업로드 — items 순서 유지
       const images = [];
-      for (const f of pickedFiles) {
-        const r = await api.uploadImage(f);
-        if (r?.url) images.push(r.url);
+      for (const it of items) {
+        if (it.url) images.push(it.url);
+        else { const r = await api.uploadImage(it.file); if (r?.url) images.push(r.url); }
       }
-      const payload = {
-        title: titleIn.value.trim(),
-        content: contentIn.value,
-        image: images[0] || null, // 커버(하위호환)
-        images,
-        address: addressIn.value.trim(),
-        latitude: null,
-        longitude: null,
-      };
-      const created = await api.post("/feeds", payload);
-      toast("게시되었습니다.");
-      close();
-      onCreated?.(created);
+      if (isEdit) {
+        const updated = await api.patch(`/feeds/${edit.feedId}`, {
+          title: titleIn.value.trim(), content: contentIn.value, images,
+        });
+        toast("수정되었습니다.");
+        close();
+        onCreated?.(updated);
+      } else {
+        const payload = {
+          title: titleIn.value.trim(), content: contentIn.value,
+          image: images[0] || null, images,
+          address: addressIn.value.trim(), latitude: null, longitude: null,
+        };
+        const created = await api.post("/feeds", payload);
+        toast("게시되었습니다.");
+        close();
+        onCreated?.(created);
+      }
     } catch (err) {
-      errEl.textContent = err.message || "공유 실패";
+      errEl.textContent = err.message || (isEdit ? "수정 실패" : "공유 실패");
       shareBtn.disabled = false;
-      shareBtn.textContent = "공유";
+      shareBtn.textContent = isEdit ? "저장" : "공유";
     }
   }
 
@@ -258,7 +271,7 @@ export function openComposer(onCreated) {
     el("div", { class: "modal" }, [
       el("div", { class: "modal-head" }, [
         el("button", { onclick: close, title: "닫기" }, "✕"),
-        el("span", {}, "새 게시물 만들기"),
+        el("span", {}, isEdit ? "게시물 수정" : "새 게시물 만들기"),
         shareBtn,
       ]),
       el("div", { class: "modal-body" }, [left, right]),
@@ -313,4 +326,53 @@ export async function renderSaved(root) {
   } catch (err) {
     list.appendChild(el("div", { class: "empty" }, `불러오기 실패: ${err.message}`));
   }
+}
+
+// ---------------- 탐색(Explore): 인기 게시물 그리드 ----------------
+export async function renderExplore(root) {
+  root.innerHTML = "";
+  root.appendChild(el("h2", { class: "page-title" }, "탐색"));
+  const grid = el("div", { class: "explore-grid" });
+  root.appendChild(grid);
+  try {
+    const data = await api.get("/feeds/likecount?page=0&size=30", { auth: false });
+    const items = data?.content ?? [];
+    if (!items.length) { grid.appendChild(el("div", { class: "empty" }, "게시물이 없어요.")); return; }
+    items.forEach(item => {
+      const src = item.image;
+      const cell = src
+        ? el("img", { class: "explore-cell", src, alt: item.title || "" })
+        : el("div", { class: "explore-cell placeholder" }, "📷");
+      if (src) cell.addEventListener("error", () => cell.replaceWith((() => { const p = el("div", { class: "explore-cell placeholder" }, "📷"); p.addEventListener("click", () => { location.hash = `#/feed/${item.feedId}`; }); return p; })()));
+      cell.style.cursor = "pointer";
+      cell.addEventListener("click", () => { location.hash = `#/feed/${item.feedId}`; });
+      grid.appendChild(cell);
+    });
+  } catch (err) {
+    grid.appendChild(el("div", { class: "empty" }, `불러오기 실패: ${err.message}`));
+  }
+}
+
+// ---------------- 홈 팔로우 추천 (가로 카드) ----------------
+async function renderHomeSuggestions(container) {
+  try {
+    const list = await api.get("/friends/suggestions?limit=8");
+    if (!list?.length) { container.remove?.(); return; }
+    container.appendChild(el("div", { class: "home-suggest-title" }, "알 수도 있는 사람"));
+    const row = el("div", { class: "home-suggest-row" });
+    list.forEach(s => {
+      const card = el("div", { class: "suggest-card" }, [
+        (() => { const a = avatar(s.name || `user${s.id}`, "lg", s.image); a.style.cursor = "pointer"; a.addEventListener("click", () => { location.hash = `#/profile/${s.id}`; }); return a; })(),
+        el("div", { class: "suggest-name", onclick: () => { location.hash = `#/profile/${s.id}`; }, style: { cursor: "pointer" } }, s.name || `user${s.id}`),
+        el("div", { class: "suggest-mutual muted" }, `공통 ${s.mutual}명`),
+        el("button", { class: "btn-primary suggest-follow", onclick: async (e) => {
+          const b = e.currentTarget; b.disabled = true;
+          try { await api.post("/friends", { receiverId: s.id }); b.textContent = "요청됨"; }
+          catch (err) { toast(err.message || "요청 실패"); b.disabled = false; }
+        }}, "친구 요청"),
+      ]);
+      row.appendChild(card);
+    });
+    container.appendChild(row);
+  } catch (e) { container.remove?.(); }
 }
