@@ -12,9 +12,27 @@ import org.springframework.web.bind.annotation.*;
 public class LikeController {
 
     private final LikeService likeService;
+    private final com.example.newsfeed.like.repository.LikeRepository likeRepository;
+    private final com.example.newsfeed.member.repository.MemberRepository memberRepository;
 
-    public LikeController(LikeService likeService) {
+    public LikeController(LikeService likeService,
+                          com.example.newsfeed.like.repository.LikeRepository likeRepository,
+                          com.example.newsfeed.member.repository.MemberRepository memberRepository) {
         this.likeService = likeService;
+        this.likeRepository = likeRepository;
+        this.memberRepository = memberRepository;
+    }
+
+    // 특정 피드를 좋아요한 사람 목록 (프로필 이동용)
+    @GetMapping("/{feedId}/members")
+    public ResponseEntity<CommonResponse<java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto>>> likers(@PathVariable Long feedId) {
+        java.util.List<Long> ids = likeRepository.findLikerMemberIds(feedId);
+        java.util.Map<Long, com.example.newsfeed.member.entity.Member> byId = memberRepository.findAllById(ids).stream()
+                .collect(java.util.stream.Collectors.toMap(com.example.newsfeed.member.entity.Member::getId, m -> m));
+        java.util.List<com.example.newsfeed.friend.dto.FriendMemberDto> out = ids.stream()
+                .map(byId::get).filter(java.util.Objects::nonNull)
+                .map(com.example.newsfeed.friend.dto.FriendMemberDto::new).toList();
+        return ResponseEntity.ok(new CommonResponse<>("좋아요한 사람", out));
     }
 
     @PostMapping("/like/{feedId}")

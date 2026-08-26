@@ -37,7 +37,8 @@ function buildView(feedId, feed, likeData, comments) {
   likes.set(feedId, liked);
   const isMine = auth.meId && author?.id && Number(auth.meId) === Number(author.id);
 
-  const likeCountEl = el("div", { class: "like-count" }, `좋아요 ${likeData?.likeCount ?? 0}개`);
+  const likeCountEl = el("div", { class: "like-count clickable", style: { cursor: "pointer" },
+    onclick: () => openLikers(feedId) }, `좋아요 ${likeData?.likeCount ?? 0}개`);
   const heart = el("button", {
     class: `heart ${liked ? "on" : ""}`,
     onclick: () => onLike(feedId, heart, likeCountEl),
@@ -306,4 +307,34 @@ function buildMedia(imgs, alt) {
   wrap.addEventListener("mouseup", (e) => onEnd(e.clientX));
   imgEl.addEventListener("dragstart", (e) => e.preventDefault()); // 이미지 드래그 고스트 방지
   return wrap;
+}
+
+// 좋아요한 사람 목록 모달
+async function openLikers(feedId) {
+  const listEl = el("div", { class: "friend-modal-list" }, el("div", { class: "muted center", style: { padding: "20px" } }, "불러오는 중..."));
+  const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => { if (e.target === backdrop) backdrop.remove(); } });
+  backdrop.appendChild(el("div", { class: "modal small" }, [
+    el("div", { class: "modal-head" }, [
+      el("button", { onclick: () => backdrop.remove(), title: "닫기" }, "✕"),
+      el("span", {}, "좋아요"),
+      el("span", {}, ""),
+    ]),
+    listEl,
+  ]));
+  document.body.appendChild(backdrop);
+  try {
+    const members = await api.get(`/likes/${feedId}/members`);
+    listEl.innerHTML = "";
+    if (!members?.length) { listEl.appendChild(el("div", { class: "empty" }, "아직 좋아요가 없어요.")); return; }
+    members.forEach(m => {
+      const row = el("button", { class: "friend-modal-row", onclick: () => { backdrop.remove(); location.hash = `#/profile/${m.id}`; } }, [
+        avatar(m.name || `user${m.id}`, "sm", m.image),
+        el("div", { class: "name" }, m.name || `user${m.id}`),
+      ]);
+      listEl.appendChild(row);
+    });
+  } catch (e) {
+    listEl.innerHTML = "";
+    listEl.appendChild(el("div", { class: "empty" }, "목록을 가져오지 못했어요."));
+  }
 }
