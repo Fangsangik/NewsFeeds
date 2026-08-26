@@ -11,6 +11,7 @@ public class MemberResponseDto {
     private String name;
     private String email;
     private String image;
+    private boolean isPrivate;
 
 
     public MemberResponseDto(Member member) {
@@ -18,6 +19,7 @@ public class MemberResponseDto {
         this.name = member.getName();
         this.email = member.getEmail();
         this.image = member.getImage();
+        this.isPrivate = member.isPrivate();
     }
 
     public static MemberResponseDto toDto(Member member) {
