@@ -43,6 +43,15 @@ export function connectStomp() {
         console.warn("bad notification frame", e);
       }
     });
+    // 읽음 실시간: 상대가 내 메시지를 읽으면 도착 → 대화창이 '읽음' 표시를 갱신한다.
+    stompClient.subscribe("/user/queue/read", (frame) => {
+      try {
+        const payload = JSON.parse(frame.body);
+        window.dispatchEvent(new CustomEvent("nf:read", { detail: payload }));
+      } catch (e) {
+        console.warn("bad read frame", e);
+      }
+    });
   };
   stompClient.onStompError = (frame) => console.warn("STOMP error", frame.headers?.message);
   stompClient.activate();
@@ -208,8 +217,22 @@ async function renderConversation(root, peerId) {
       toast(`💬 새 메시지 (user${m.senderId})`);
     }
   });
+  // 상대가 내 메시지를 읽으면 실시간으로 '읽음' 표시. 이 대화 상대가 읽은 경우만.
+  const onRead = (e) => {
+    const d = e.detail || {};
+    if (Number(d.peerId) !== Number(peerId)) return;
+    // 해당 메시지 아래에 '읽음' 뱃지 추가(없으면). 특정 mid를 모르면 내 마지막 메시지에 표시.
+    let node = d.messageId != null ? list.querySelector(`[data-mid="${d.messageId}"]`) : null;
+    if (!node) { const mine = [...list.querySelectorAll(".dm-msg.mine")]; node = mine[mine.length - 1]; }
+    if (node && !node.querySelector(".dm-read")) {
+      const meta = node.querySelector(".dm-meta");
+      if (meta) meta.insertBefore(el("span", { class: "dm-read" }, "읽음"), meta.firstChild);
+    }
+  };
+  window.addEventListener("nf:read", onRead);
+
   // Detach on hashchange so we don't double-append after navigation
-  const cleanup = () => { unsub(); window.removeEventListener("hashchange", cleanup); };
+  const cleanup = () => { unsub(); window.removeEventListener("nf:read", onRead); window.removeEventListener("hashchange", cleanup); };
   window.addEventListener("hashchange", cleanup);
 
   async function send() {
