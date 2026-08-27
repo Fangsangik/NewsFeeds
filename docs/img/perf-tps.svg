@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340" font-family="-apple-system,Segoe UI,Roboto,sans-serif">
+<rect width="760" height="340" fill="#ffffff"/>
+<text x="60" y="28" font-size="18" font-weight="700" fill="#1a1a1a">중부하 처리량(TPS) 개선</text>
+<text x="60" y="48" font-size="12" fill="#8e8e8e">getReferenceById로 SELECT 2 제거(R3) → TPS +72% (높을수록 좋음)</text>
+<line x1="60" y1="290.0" x2="740" y2="290.0" stroke="#eee"/>
+<text x="52" y="294.0" font-size="10" fill="#999" text-anchor="end">0</text>
+<line x1="60" y1="247.6" x2="740" y2="247.6" stroke="#eee"/>
+<text x="52" y="251.6" font-size="10" fill="#999" text-anchor="end">36</text>
+<line x1="60" y1="205.2" x2="740" y2="205.2" stroke="#eee"/>
+<text x="52" y="209.2" font-size="10" fill="#999" text-anchor="end">72</text>
+<line x1="60" y1="162.8" x2="740" y2="162.8" stroke="#eee"/>
+<text x="52" y="166.8" font-size="10" fill="#999" text-anchor="end">108</text>
+<line x1="60" y1="120.4" x2="740" y2="120.4" stroke="#eee"/>
+<text x="52" y="124.4" font-size="10" fill="#999" text-anchor="end">144</text>
+<line x1="60" y1="78.0" x2="740" y2="78.0" stroke="#eee"/>
+<text x="52" y="82.0" font-size="10" fill="#999" text-anchor="end">180</text>
+<text x="16" y="184.0" font-size="11" fill="#666" transform="rotate(-90 16 184.0)" text-anchor="middle">TPS</text>
+<rect x="107.6" y="182.8" width="244.8" height="107.2" rx="3" fill="#22c55e"/>
+<text x="230.0" y="177.8" font-size="10" font-weight="600" fill="#333" text-anchor="middle">91</text>
+<text x="230.0" y="310" font-size="12" fill="#333" text-anchor="middle">Baseline</text>
+<rect x="447.6" y="105.1" width="244.8" height="184.9" rx="3" fill="#22c55e"/>
+<text x="570.0" y="100.1" font-size="10" font-weight="600" fill="#333" text-anchor="middle">157</text>
+<text x="570.0" y="310" font-size="12" fill="#333" text-anchor="middle">R3</text>
+<rect x="697" y="51" width="11" height="11" rx="2" fill="#22c55e"/>
+<text x="712" y="60" font-size="11" fill="#333">TPS</text>
+</svg>
