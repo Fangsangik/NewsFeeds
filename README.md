@@ -72,6 +72,14 @@ DM 전송 hot path를 k6로 프로파일링해 **DB read-bound → write-bound�
 | **R3** | 메시지 sender/receiver 조회 제거 (getReferenceById) | 2→**0** | nf-app CPU **급감**(VUS=500 163→71%), 중부하 TPS **+72%** |
 | **R4** | 대화/안읽음 복합 인덱스 | — | 선택적 대화 filesort 제거 (EXPLAIN) |
 
+<p align="center">
+  <img src="./docs/img/perf-selects.svg" width="49%" alt="요청당 DB SELECT 3→0"/>
+  <img src="./docs/img/perf-tps.svg" width="49%" alt="중부하 TPS +72%"/>
+</p>
+<p align="center">
+  <img src="./docs/img/perf-cpu.svg" width="70%" alt="부하 시 CPU 사용률 (nf-app CPU 163→71%)"/>
+</p>
+
 측정 도구를 JMeter(ARM 에뮬레이션 한계)에서 **k6 native**로 교체해 클라이언트 병목을 제거했고,
 하네스의 데이터 분포 결함·라운드 간 교란변수까지 문서화했다.
 
@@ -122,7 +130,7 @@ DM 전송 hot path를 k6로 프로파일링해 **DB read-bound → write-bound�
 *ERD 다이어그램 추가 예정*
 
 ## 👨‍💻 API 문서
-*API 문서 링크 추가 예정*
+전체 엔드포인트 명세: **[docs/API.md](./docs/API.md)** — 인증·회원·피드·좋아요·댓글·친구·DM·알림·저장/차단/신고·파일
 
 ## 🎯 주요 기능
 

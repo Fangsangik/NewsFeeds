@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340" font-family="-apple-system,Segoe UI,Roboto,sans-serif">
+<rect width="760" height="340" fill="#ffffff"/>
+<text x="60" y="28" font-size="18" font-weight="700" fill="#1a1a1a">부하 시 CPU 사용률</text>
+<text x="60" y="48" font-size="12" fill="#8e8e8e">MySQL CPU(VUS=50) · nf-app CPU(VUS=500) — 낮을수록 좋음</text>
+<line x1="60" y1="290.0" x2="740" y2="290.0" stroke="#eee"/>
+<text x="52" y="294.0" font-size="10" fill="#999" text-anchor="end">0%</text>
+<line x1="60" y1="247.6" x2="740" y2="247.6" stroke="#eee"/>
+<text x="52" y="251.6" font-size="10" fill="#999" text-anchor="end">60%</text>
+<line x1="60" y1="205.2" x2="740" y2="205.2" stroke="#eee"/>
+<text x="52" y="209.2" font-size="10" fill="#999" text-anchor="end">120%</text>
+<line x1="60" y1="162.8" x2="740" y2="162.8" stroke="#eee"/>
+<text x="52" y="166.8" font-size="10" fill="#999" text-anchor="end">180%</text>
+<line x1="60" y1="120.4" x2="740" y2="120.4" stroke="#eee"/>
+<text x="52" y="124.4" font-size="10" fill="#999" text-anchor="end">240%</text>
+<line x1="60" y1="78.0" x2="740" y2="78.0" stroke="#eee"/>
+<text x="52" y="82.0" font-size="10" fill="#999" text-anchor="end">300%</text>
+<text x="16" y="184.0" font-size="11" fill="#666" transform="rotate(-90 16 184.0)" text-anchor="middle">CPU %</text>
+<rect x="91.7" y="101.3" width="81.6" height="188.7" rx="3" fill="#dd2a7b"/>
+<text x="132.5" y="96.3" font-size="10" font-weight="600" fill="#333" text-anchor="middle">267%</text>
+<rect x="173.3" y="174.8" width="81.6" height="115.2" rx="3" fill="#0095f6"/>
+<text x="214.1" y="169.8" font-size="10" font-weight="600" fill="#333" text-anchor="middle">163%</text>
+<text x="173.3" y="310" font-size="12" fill="#333" text-anchor="middle">Baseline</text>
+<rect x="318.4" y="172.0" width="81.6" height="118.0" rx="3" fill="#dd2a7b"/>
+<text x="359.2" y="167.0" font-size="10" font-weight="600" fill="#333" text-anchor="middle">167%</text>
+<rect x="400.0" y="178.3" width="81.6" height="111.7" rx="3" fill="#0095f6"/>
+<text x="440.8" y="173.3" font-size="10" font-weight="600" fill="#333" text-anchor="middle">158%</text>
+<text x="400.0" y="310" font-size="12" fill="#333" text-anchor="middle">R2</text>
+<rect x="545.1" y="172.0" width="81.6" height="118.0" rx="3" fill="#dd2a7b"/>
+<text x="585.9" y="167.0" font-size="10" font-weight="600" fill="#333" text-anchor="middle">167%</text>
+<rect x="626.7" y="239.8" width="81.6" height="50.2" rx="3" fill="#0095f6"/>
+<text x="667.5" y="234.8" font-size="10" font-weight="600" fill="#333" text-anchor="middle">71%</text>
+<text x="626.7" y="310" font-size="12" fill="#333" text-anchor="middle">R3</text>
+<rect x="570" y="51" width="11" height="11" rx="2" fill="#dd2a7b"/>
+<text x="585" y="60" font-size="11" fill="#333">MySQL@50</text>
+<rect x="648" y="51" width="11" height="11" rx="2" fill="#0095f6"/>
+<text x="663" y="60" font-size="11" fill="#333">nf-app@500</text>
+</svg>
